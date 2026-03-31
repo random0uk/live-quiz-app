@@ -49,20 +49,16 @@ export default function Page() {
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-purple-500/30">
             <Zap className="w-12 h-12 text-white" fill="currentColor" />
           </div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-            QuizBlitz
-          </h1>
-          <p className="text-gray-500 text-center text-lg">
-            Live multiplayer quizzes — play with friends!
-          </p>
+          <h1 className="text-5xl font-black text-gray-900 tracking-tight">QuizBlitz</h1>
+          <p className="text-gray-500 text-center text-lg">Live multiplayer quizzes — play with friends!</p>
         </div>
 
         {/* Action Cards */}
         <div className="w-full flex flex-col gap-4">
           <a href="/join" className="group w-full block">
-            <div className="w-full rounded-3xl bg-gradient-to-r from-violet-500 to-purple-600 p-6 flex items-center justify-between shadow-xl shadow-purple-500/25 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:shadow-purple-500/40 active:scale-[0.98]">
+            <div className="w-full rounded-3xl bg-gradient-to-r from-violet-500 to-purple-600 p-6 flex items-center justify-between shadow-xl shadow-purple-500/25 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl active:scale-[0.98]">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
                   <Play className="w-7 h-7 text-white" fill="currentColor" />
                 </div>
                 <div>
@@ -74,10 +70,7 @@ export default function Page() {
             </div>
           </a>
 
-          <button
-            onClick={() => setShowPinDialog(true)}
-            className="group w-full text-left"
-          >
+          <button onClick={() => setShowPinDialog(true)} className="group w-full text-left">
             <div className="w-full rounded-3xl bg-white border-2 border-gray-200 p-6 flex items-center justify-between shadow-lg transition-all duration-300 group-hover:scale-[1.02] group-hover:border-violet-300 group-hover:shadow-xl active:scale-[0.98]">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
