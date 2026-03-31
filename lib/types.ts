@@ -28,7 +28,6 @@ export interface Question {
   correct_index: number
   time_limit: number
   position: number
-  created_at: string
 }
 
 export interface Player {
@@ -36,7 +35,7 @@ export interface Player {
   quiz_id: string
   name: string
   score: number
-  created_at: string
+  joined_at: string
 }
 
 export interface Answer {
