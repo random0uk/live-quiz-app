@@ -1,9 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Question } from "@/lib/types"
+import { Question, Quiz } from "@/lib/types"
+import { Clock, Check } from "lucide-react"
 
 interface Props {
+  quiz: Quiz
   question: Question
   questionNumber: number
   totalQuestions: number
@@ -11,14 +13,14 @@ interface Props {
   onAnswer: (selectedIndex: number, timeRemaining: number) => void
 }
 
-const ANSWER_STYLES = [
-  { bg: "bg-[--answer-red]", hover: "hover:opacity-90", label: "A", shadow: "shadow-[--answer-red]/30" },
-  { bg: "bg-[--answer-blue]", hover: "hover:opacity-90", label: "B", shadow: "shadow-[--answer-blue]/30" },
-  { bg: "bg-[--answer-yellow]", hover: "hover:opacity-90", label: "C", shadow: "shadow-[--answer-yellow]/30" },
-  { bg: "bg-[--answer-green]", hover: "hover:opacity-90", label: "D", shadow: "shadow-[--answer-green]/30" },
+const ANSWER_COLORS = [
+  { bg: "#e53935", name: "Red" },
+  { bg: "#1e88e5", name: "Blue" },
+  { bg: "#fdd835", name: "Yellow", text: "#1a1a1a" },
+  { bg: "#43a047", name: "Green" },
 ]
 
-export default function PlayerQuestion({ question, questionNumber, totalQuestions, hasAnswered, onAnswer }: Props) {
+export default function PlayerQuestion({ quiz, question, questionNumber, totalQuestions, hasAnswered, onAnswer }: Props) {
   const [timeLeft, setTimeLeft] = useState(question.time_limit)
   const [selected, setSelected] = useState<number | null>(null)
 
@@ -40,34 +42,42 @@ export default function PlayerQuestion({ question, questionNumber, totalQuestion
   }
 
   const progress = (timeLeft / question.time_limit) * 100
+  const isUrgent = timeLeft <= 5
+  const isWarning = timeLeft <= 10
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main 
+      className="min-h-screen flex flex-col"
+      style={{ background: `linear-gradient(180deg, ${quiz.theme_bg}, ${quiz.theme_btn})` }}
+    >
       {/* Timer bar */}
-      <div className="h-2 bg-secondary w-full">
+      <div className="h-2 bg-white/20 w-full">
         <div
-          className={`h-full transition-all duration-1000 ${
-            timeLeft > 10 ? "bg-accent" : timeLeft > 5 ? "bg-[--answer-yellow]" : "bg-[--answer-red]"
+          className={`h-full transition-all duration-1000 ease-linear ${
+            isUrgent ? "bg-red-400" : isWarning ? "bg-yellow-400" : "bg-white"
           }`}
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      <div className="px-4 py-3 flex items-center justify-between">
-        <span className="text-muted-foreground text-sm font-medium">Q{questionNumber}/{totalQuestions}</span>
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg ${
-          timeLeft <= 5 ? "bg-[--answer-red] text-white animate-pulse" :
-          timeLeft <= 10 ? "bg-[--answer-yellow] text-white" :
-          "bg-secondary text-foreground"
-        }`}>
-          {timeLeft}
+      <div className="px-4 py-4 flex items-center justify-between">
+        <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-2">
+          <span className="text-white font-bold text-sm">Q{questionNumber}/{totalQuestions}</span>
+        </div>
+        <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center ${
+          isUrgent ? "bg-red-500 animate-pulse" : isWarning ? "bg-yellow-500" : "bg-white"
+        } shadow-xl`}>
+          <Clock className={`w-3 h-3 ${isUrgent || isWarning ? "text-white" : "text-gray-500"}`} />
+          <span className={`font-black text-xl ${isUrgent || isWarning ? "text-white" : "text-gray-900"}`}>
+            {timeLeft}
+          </span>
         </div>
       </div>
 
       {/* Question */}
       <div className="px-4 pb-4">
-        <div className="bg-card border border-border rounded-2xl p-5 min-h-[90px] flex items-center justify-center">
-          <p className="text-foreground font-bold text-lg text-center text-balance leading-relaxed">
+        <div className="bg-white rounded-2xl p-5 shadow-xl min-h-[80px] flex items-center justify-center">
+          <p className="text-gray-900 font-bold text-lg text-center text-balance leading-relaxed">
             {question.question_text}
           </p>
         </div>
@@ -76,18 +86,26 @@ export default function PlayerQuestion({ question, questionNumber, totalQuestion
       {/* Answer Buttons */}
       <div className="flex-1 px-4 pb-8">
         {hasAnswered ? (
-          <div className="h-full flex flex-col items-center justify-center gap-4">
+          <div className="h-full flex flex-col items-center justify-center gap-5">
             {selected !== null && (
-              <div className={`${ANSWER_STYLES[selected].bg} w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg`}>
-                <span className="text-white font-black text-2xl">{ANSWER_STYLES[selected].label}</span>
+              <div 
+                className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-2xl"
+                style={{ backgroundColor: ANSWER_COLORS[selected].bg }}
+              >
+                <span 
+                  className="font-black text-3xl"
+                  style={{ color: ANSWER_COLORS[selected].text || "white" }}
+                >
+                  {String.fromCharCode(65 + selected)}
+                </span>
               </div>
             )}
-            <div className="bg-card border border-border rounded-2xl p-5 text-center w-full max-w-xs">
-              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-2">
-                <span className="text-accent font-bold text-lg">✓</span>
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-6 text-center w-full max-w-xs">
+              <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center mx-auto mb-3">
+                <Check className="w-6 h-6 text-white" />
               </div>
-              <p className="text-foreground font-bold">Answer submitted!</p>
-              <p className="text-muted-foreground text-sm mt-1">Waiting for host...</p>
+              <p className="text-white font-bold text-xl">Answer Locked In!</p>
+              <p className="text-white/70 text-sm mt-1">Waiting for results...</p>
             </div>
           </div>
         ) : (
@@ -96,10 +114,19 @@ export default function PlayerQuestion({ question, questionNumber, totalQuestion
               <button
                 key={idx}
                 onClick={() => handleSelect(idx)}
-                className={`${ANSWER_STYLES[idx].bg} ${ANSWER_STYLES[idx].hover} rounded-2xl p-4 flex flex-col gap-2 shadow-lg ${ANSWER_STYLES[idx].shadow} transition-all active:scale-[0.95] text-left`}
+                className="rounded-2xl p-5 flex flex-col gap-2 shadow-xl transition-all active:scale-[0.95] hover:scale-[1.02] text-left"
+                style={{ 
+                  backgroundColor: ANSWER_COLORS[idx].bg,
+                  color: ANSWER_COLORS[idx].text || "white"
+                }}
               >
-                <span className="text-white/80 text-xs font-bold">{ANSWER_STYLES[idx].label}</span>
-                <span className="text-white font-semibold text-sm leading-relaxed">{opt}</span>
+                <div 
+                  className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"
+                  style={{ color: ANSWER_COLORS[idx].text || "white" }}
+                >
+                  <span className="font-black text-lg">{String.fromCharCode(65 + idx)}</span>
+                </div>
+                <span className="font-bold text-base leading-snug">{opt}</span>
               </button>
             ))}
           </div>

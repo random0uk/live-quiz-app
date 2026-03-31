@@ -44,7 +44,7 @@ export default function PlayPage() {
     if (playerRes.data) setPlayer(playerRes.data)
     if (playersRes.data) setPlayers(playersRes.data)
     setLoading(false)
-  }, [id, getPlayerId])
+  }, [id, getPlayerId, router, supabase])
 
   useEffect(() => {
     fetchData()
@@ -53,7 +53,7 @@ export default function PlayPage() {
       .channel(`play-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
         setQuiz(payload.new as Quiz)
-        setLastResult(null) // clear result when question changes
+        setLastResult(null)
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {
         const playerId = getPlayerId()
@@ -69,7 +69,7 @@ export default function PlayPage() {
 
     channelRef.current = channel
     return () => { channel.unsubscribe() }
-  }, [id, fetchData])
+  }, [id, fetchData, getPlayerId, supabase])
 
   const handleAnswer = async (selectedIndex: number, timeRemaining: number) => {
     const playerId = getPlayerId()
@@ -100,10 +100,10 @@ export default function PlayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-muted-foreground text-sm">Joining game...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
+          <p className="text-gray-500">Joining game...</p>
         </div>
       </div>
     )
@@ -111,8 +111,8 @@ export default function PlayPage() {
 
   if (!quiz || !player) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Could not connect to game.</p>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+        <p className="text-gray-500">Could not connect to game.</p>
       </div>
     )
   }
@@ -127,6 +127,7 @@ export default function PlayPage() {
   if (quiz.status === "question" && currentQuestion) {
     return (
       <PlayerQuestion
+        quiz={quiz}
         question={currentQuestion}
         questionNumber={quiz.current_question_index + 1}
         totalQuestions={questions.length}
@@ -139,6 +140,7 @@ export default function PlayPage() {
   if (quiz.status === "answer_reveal") {
     return (
       <PlayerWaiting
+        quiz={quiz}
         lastResult={lastResult}
         playerScore={player.score}
       />
@@ -148,6 +150,7 @@ export default function PlayPage() {
   if (quiz.status === "leaderboard") {
     return (
       <PlayerLeaderboard
+        quiz={quiz}
         players={players}
         currentPlayerId={player.id}
       />

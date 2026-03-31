@@ -1,16 +1,22 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Zap } from "lucide-react"
 
 export default function JoinPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [gameCode, setGameCode] = useState("")
   const [playerName, setPlayerName] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    const code = searchParams.get("code")
+    if (code) setGameCode(code.toUpperCase())
+  }, [searchParams])
 
   const handleJoin = async () => {
     setError("")
@@ -27,7 +33,6 @@ export default function JoinPage() {
       const data = await res.json()
       if (!res.ok) return setError(data.error || "Could not join game.")
 
-      // Store player ID in sessionStorage so the player screen can use it
       sessionStorage.setItem(`player_${data.quiz.id}`, data.player.id)
       router.push(`/play/${data.quiz.id}`)
     } catch {
@@ -38,59 +43,59 @@ export default function JoinPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
         {/* Header */}
-        <div className="flex flex-col items-center gap-3">
-          <Link href="/" className="self-start p-2 rounded-xl hover:bg-secondary transition-colors">
-            <ChevronLeft className="w-5 h-5 text-foreground" />
+        <div className="flex flex-col items-center gap-4">
+          <Link href="/" className="self-start p-2 rounded-xl hover:bg-gray-100 transition-colors">
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
           </Link>
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-            <Zap className="w-7 h-7 text-primary-foreground" fill="currentColor" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl shadow-purple-500/30">
+            <Zap className="w-8 h-8 text-white" fill="currentColor" />
           </div>
           <div className="text-center">
-            <h1 className="text-3xl font-black text-foreground">Join Game</h1>
-            <p className="text-muted-foreground text-sm mt-1">Enter the code shown on screen</p>
+            <h1 className="text-3xl font-black text-gray-900">Join Game</h1>
+            <p className="text-gray-500 text-sm mt-1">Enter the code shown on screen</p>
           </div>
         </div>
 
         {/* Form */}
-        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4">
+        <div className="bg-white border border-gray-200 rounded-3xl p-6 flex flex-col gap-5 shadow-xl">
           {error && (
-            <div className="bg-destructive/20 border border-destructive/40 text-foreground rounded-xl px-4 py-3 text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-medium">
               {error}
             </div>
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-muted-foreground text-sm font-medium">Game Code</label>
+            <label className="text-gray-500 text-sm font-semibold">Game Code</label>
             <input
               type="text"
               value={gameCode}
               onChange={e => setGameCode(e.target.value.toUpperCase())}
-              placeholder="e.g. ABC123"
+              placeholder="ABC123"
               maxLength={6}
               autoCapitalize="characters"
-              className="w-full bg-input border border-border rounded-xl px-4 py-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-2xl font-black text-center tracking-widest uppercase"
+              className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-5 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-violet-500 focus:bg-white text-3xl font-black text-center tracking-[0.3em] uppercase transition-all"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-muted-foreground text-sm font-medium">Your Name</label>
+            <label className="text-gray-500 text-sm font-semibold">Your Name</label>
             <input
               type="text"
               value={playerName}
               onChange={e => setPlayerName(e.target.value)}
-              placeholder="e.g. Alex"
+              placeholder="Enter your name"
               maxLength={20}
-              className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-4 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-violet-500 focus:bg-white text-lg font-semibold transition-all"
             />
           </div>
 
           <button
             onClick={handleJoin}
             disabled={loading}
-            className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/25 transition-all hover:opacity-90 disabled:opacity-50 active:scale-[0.98] mt-1"
+            className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-5 rounded-2xl font-bold text-xl shadow-xl shadow-purple-500/30 transition-all hover:scale-[1.02] hover:shadow-2xl disabled:opacity-50 active:scale-[0.98] mt-2"
           >
             {loading ? "Joining..." : "Join Game"}
           </button>

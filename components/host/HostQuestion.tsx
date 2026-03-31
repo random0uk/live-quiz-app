@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Quiz, Question } from "@/lib/types"
-import { Users } from "lucide-react"
+import { Users, Clock } from "lucide-react"
 
 interface Props {
   quiz: Quiz
@@ -14,11 +14,11 @@ interface Props {
   onReveal: () => void
 }
 
-const ANSWER_STYLES = [
-  { bg: "bg-[--answer-red]", label: "A" },
-  { bg: "bg-[--answer-blue]", label: "B" },
-  { bg: "bg-[--answer-yellow]", label: "C" },
-  { bg: "bg-[--answer-green]", label: "D" },
+const ANSWER_COLORS = [
+  { bg: "#e53935", name: "Red" },
+  { bg: "#1e88e5", name: "Blue" },
+  { bg: "#fdd835", name: "Yellow", text: "#1a1a1a" },
+  { bg: "#43a047", name: "Green" },
 ]
 
 export default function HostQuestion({
@@ -39,68 +39,94 @@ export default function HostQuestion({
     }
     const t = setTimeout(() => setTimeLeft(prev => prev - 1), 1000)
     return () => clearTimeout(t)
-  }, [timeLeft])
+  }, [timeLeft, revealed, onReveal])
 
   const progress = (timeLeft / question.time_limit) * 100
-  const timerColor = timeLeft > 10 ? "bg-accent" : timeLeft > 5 ? "bg-[--answer-yellow]" : "bg-[--answer-red]"
+  const isUrgent = timeLeft <= 5
+  const isWarning = timeLeft <= 10
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main 
+      className="min-h-screen flex flex-col overflow-hidden"
+      style={{ background: `linear-gradient(180deg, ${quiz.theme_bg}, ${quiz.theme_btn})` }}
+    >
       {/* Progress bar */}
-      <div className="h-1.5 bg-secondary w-full">
+      <div className="h-2 bg-white/20 w-full">
         <div
-          className={`h-full ${timerColor} transition-all duration-1000`}
+          className={`h-full transition-all duration-1000 ease-linear ${
+            isUrgent ? "bg-red-400" : isWarning ? "bg-yellow-400" : "bg-white"
+          }`}
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Header */}
-      <div className="px-4 py-4 flex items-center justify-between">
-        <span className="text-muted-foreground text-sm font-medium">
-          Q{questionNumber}/{totalQuestions}
-        </span>
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg ${
-          timeLeft <= 5 ? "bg-[--answer-red] text-white animate-pulse" :
-          timeLeft <= 10 ? "bg-[--answer-yellow] text-white" :
-          "bg-accent text-accent-foreground"
-        }`}>
-          {timeLeft}
+      <div className="px-6 py-4 flex items-center justify-between">
+        <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-2">
+          <span className="text-white font-bold">
+            Question {questionNumber} of {totalQuestions}
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-          <Users className="w-4 h-4" />
-          <span>{answerCount}/{playerCount}</span>
+        
+        {/* Timer */}
+        <div className={`relative w-20 h-20 rounded-full flex items-center justify-center ${
+          isUrgent ? "bg-red-500 animate-pulse" : isWarning ? "bg-yellow-500" : "bg-white"
+        } shadow-2xl`}>
+          <div className="flex flex-col items-center">
+            <Clock className={`w-4 h-4 ${isUrgent || isWarning ? "text-white" : "text-gray-600"}`} />
+            <span className={`font-black text-3xl ${
+              isUrgent || isWarning ? "text-white" : "text-gray-900"
+            }`}>
+              {timeLeft}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-2 flex items-center gap-2">
+          <Users className="w-4 h-4 text-white" />
+          <span className="text-white font-bold">{answerCount}/{playerCount}</span>
         </div>
       </div>
 
-      {/* Question */}
-      <div className="flex-1 flex flex-col px-4 gap-5">
-        <div className="bg-card border border-border rounded-2xl p-5 min-h-[100px] flex items-center justify-center">
-          <p className="text-foreground font-bold text-xl text-center text-balance leading-relaxed">
+      {/* Question Card */}
+      <div className="px-6 py-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl min-h-[120px] flex items-center justify-center">
+          <p className="text-gray-900 font-black text-2xl md:text-4xl text-center text-balance leading-relaxed">
             {question.question_text}
           </p>
         </div>
+      </div>
 
-        {/* Options Grid */}
-        <div className="grid grid-cols-2 gap-3">
+      {/* Options Grid */}
+      <div className="flex-1 px-6 py-4">
+        <div className="grid grid-cols-2 gap-4 h-full">
           {question.options.map((opt, idx) => (
             <div
               key={idx}
-              className={`${ANSWER_STYLES[idx].bg} rounded-2xl p-4 flex flex-col gap-1 shadow-md`}
+              className="rounded-3xl p-6 flex items-center gap-4 shadow-xl transition-transform hover:scale-[1.02]"
+              style={{ 
+                backgroundColor: ANSWER_COLORS[idx].bg,
+                color: ANSWER_COLORS[idx].text || "white"
+              }}
             >
-              <span className="text-white/80 text-xs font-bold">{ANSWER_STYLES[idx].label}</span>
-              <span className="text-white font-semibold text-sm leading-relaxed">{opt}</span>
+              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                <span className="font-black text-2xl" style={{ color: ANSWER_COLORS[idx].text || "white" }}>
+                  {String.fromCharCode(65 + idx)}
+                </span>
+              </div>
+              <span className="font-bold text-xl md:text-2xl leading-snug">{opt}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Reveal button */}
-      <div className="p-4 pb-8">
+      <div className="p-6 pb-8">
         <button
           onClick={() => { setRevealed(true); onReveal() }}
-          className="w-full bg-secondary border border-border text-foreground py-4 rounded-2xl font-bold text-base transition-all hover:bg-secondary/80 active:scale-[0.98]"
+          className="w-full bg-white/20 backdrop-blur text-white py-5 rounded-2xl font-bold text-lg transition-all hover:bg-white/30 active:scale-[0.98] border-2 border-white/30"
         >
-          Reveal Answer Early
+          Skip Timer & Reveal Answer
         </button>
       </div>
     </main>

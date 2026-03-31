@@ -7,7 +7,17 @@ export interface Quiz {
   game_code: string
   status: QuizStatus
   current_question_index: number
+  theme_bg: string
+  theme_btn: string
   created_at: string
+}
+
+export interface OrganizerSettings {
+  id: number
+  pin_code: string
+  default_theme_bg: string
+  default_theme_btn: string
+  updated_at: string
 }
 
 export interface Question {

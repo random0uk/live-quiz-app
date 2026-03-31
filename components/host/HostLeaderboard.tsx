@@ -1,6 +1,7 @@
 "use client"
 
 import { Quiz, Player } from "@/lib/types"
+import { Trophy, Medal, Award, ChevronRight } from "lucide-react"
 
 interface Props {
   quiz: Quiz
@@ -10,8 +11,8 @@ interface Props {
   onNext: () => void
 }
 
-const MEDAL_COLORS = ["text-[--answer-yellow]", "text-muted-foreground", "text-[--answer-red]"]
-const MEDAL_LABELS = ["1st", "2nd", "3rd"]
+const MEDAL_ICONS = [Trophy, Medal, Award]
+const MEDAL_COLORS = ["#ffd700", "#c0c0c0", "#cd7f32"]
 
 export default function HostLeaderboard({ quiz, players, questionNumber, totalQuestions, onNext }: Props) {
   const sorted = [...players].sort((a, b) => b.score - a.score)
@@ -19,38 +20,68 @@ export default function HostLeaderboard({ quiz, players, questionNumber, totalQu
   const maxScore = sorted[0]?.score || 1
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
-      <div className="px-4 py-4 flex items-center justify-between">
-        <span className="text-muted-foreground text-sm font-medium">Q{questionNumber}/{totalQuestions}</span>
-        <div className="bg-primary/20 text-primary px-3 py-1.5 rounded-xl text-sm font-bold">
-          Leaderboard
+    <main 
+      className="min-h-screen flex flex-col"
+      style={{ background: `linear-gradient(135deg, ${quiz.theme_bg}15, ${quiz.theme_btn}10)` }}
+    >
+      {/* Header */}
+      <div className="px-6 py-5 flex items-center justify-between">
+        <div className="bg-white rounded-xl px-4 py-2 shadow-sm">
+          <span className="text-gray-700 font-bold">Q{questionNumber}/{totalQuestions}</span>
         </div>
+        <h2 className="text-2xl font-black text-gray-900">Leaderboard</h2>
+        <div className="w-20" />
       </div>
 
-      <div className="flex-1 flex flex-col px-4 gap-4 overflow-hidden">
-        <h2 className="text-2xl font-black text-foreground text-center">Top Players</h2>
-
-        <div className="flex-1 overflow-y-auto flex flex-col gap-2 pb-4">
+      <div className="flex-1 flex flex-col px-6 gap-4 overflow-hidden">
+        <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-4">
           {sorted.slice(0, 10).map((player, idx) => {
             const barPct = (player.score / maxScore) * 100
+            const MedalIcon = idx < 3 ? MEDAL_ICONS[idx] : null
+            const isTop3 = idx < 3
+
             return (
               <div
                 key={player.id}
-                className="bg-card border border-border rounded-2xl px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-right-2 duration-300"
-                style={{ animationDelay: `${idx * 60}ms` }}
+                className={`bg-white rounded-2xl px-5 py-4 flex items-center gap-4 shadow-lg animate-in fade-in slide-in-from-right-4 duration-500 ${
+                  isTop3 ? "ring-2" : ""
+                }`}
+                style={{ 
+                  animationDelay: `${idx * 80}ms`,
+                  ringColor: isTop3 ? MEDAL_COLORS[idx] : undefined
+                }}
               >
-                <span className={`w-8 text-center font-black text-sm ${idx < 3 ? MEDAL_COLORS[idx] : "text-muted-foreground"}`}>
-                  {idx < 3 ? MEDAL_LABELS[idx] : `${idx + 1}`}
-                </span>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ 
+                    backgroundColor: isTop3 ? `${MEDAL_COLORS[idx]}20` : "#f3f4f6"
+                  }}
+                >
+                  {MedalIcon ? (
+                    <MedalIcon className="w-6 h-6" style={{ color: MEDAL_COLORS[idx] }} />
+                  ) : (
+                    <span className="font-black text-lg text-gray-400">{idx + 1}</span>
+                  )}
+                </div>
+
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-foreground font-semibold text-sm truncate">{player.name}</span>
-                    <span className="text-foreground font-black text-sm ml-2 shrink-0">{player.score.toLocaleString()}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-900 font-bold truncate">{player.name}</span>
+                    <span 
+                      className="font-black text-lg ml-3 shrink-0"
+                      style={{ color: isTop3 ? MEDAL_COLORS[idx] : "#6b7280" }}
+                    >
+                      {player.score.toLocaleString()}
+                    </span>
                   </div>
-                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-primary rounded-full transition-all duration-700"
-                      style={{ width: `${barPct}%`, transitionDelay: `${idx * 60 + 200}ms` }}
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ 
+                        width: `${barPct}%`, 
+                        transitionDelay: `${idx * 80 + 300}ms`,
+                        background: `linear-gradient(90deg, ${quiz.theme_bg}, ${quiz.theme_btn})`
+                      }}
                     />
                   </div>
                 </div>
@@ -60,12 +91,17 @@ export default function HostLeaderboard({ quiz, players, questionNumber, totalQu
         </div>
       </div>
 
-      <div className="p-4 pb-8">
+      <div className="p-6 pb-8">
         <button
           onClick={onNext}
-          className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/25 transition-all hover:opacity-90 active:scale-[0.98]"
+          className="w-full text-white py-5 rounded-2xl font-bold text-xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+          style={{ 
+            background: `linear-gradient(135deg, ${quiz.theme_bg}, ${quiz.theme_btn})`,
+            boxShadow: `0 20px 40px ${quiz.theme_bg}40`
+          }}
         >
           {isLastQuestion ? "See Final Results" : "Next Question"}
+          <ChevronRight className="w-6 h-6" />
         </button>
       </div>
     </main>
