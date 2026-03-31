@@ -1,0 +1,219 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import type { Quiz, Question, Player } from "@/lib/types"
+import { QRCodeSVG } from "qrcode.react"
+import { motion, AnimatePresence } from "framer-motion"
+
+export default function ProjectorScreen() {
+  const { id } = useParams<{ id: string }>()
+  const [quiz, setQuiz] = useState<Quiz | null>(null)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [players, setPlayers] = useState<Player[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function load() {
+      const [quizRes, questionsRes, playersRes] = await Promise.all([
+        supabase.from("quizzes").select("*").eq("id", id).single(),
+        supabase.from("questions").select("*").eq("quiz_id", id).order("position"),
+        supabase.from("players").select("*").eq("quiz_id", id).order("score", { ascending: false }),
+      ])
+      if (quizRes.data) setQuiz(quizRes.data)
+      if (questionsRes.data) setQuestions(questionsRes.data)
+      if (playersRes.data) setPlayers(playersRes.data)
+      setLoading(false)
+    }
+
+    load()
+
+    const channel = supabase
+      .channel(`screen-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
+        if (payload.new) setQuiz(payload.new as Quiz)
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {
+        supabase.from("players").select("*").eq("quiz_id", id).order("score", { ascending: false }).then(({ data }) => {
+          if (data) setPlayers(data)
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!quiz) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Quiz not found</p>
+      </div>
+    )
+  }
+
+  const currentQ = questions[quiz.current_question_index]
+  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/join?code=${quiz.game_code}` : ""
+
+  // Lobby - show QR and join code
+  if (quiz.status === "lobby") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-8"
+        >
+          <h1 className="text-3xl font-bold tracking-tight text-balance text-center">{quiz.title}</h1>
+          
+          <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-6">
+            <div className="bg-white p-4 rounded-xl">
+              <QRCodeSVG value={joinUrl} size={200} />
+            </div>
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm mb-2">Join Code</p>
+              <p className="text-5xl font-mono font-bold tracking-widest text-primary">{quiz.game_code}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 max-w-xl">
+            <AnimatePresence mode="popLayout">
+              {players.map((p) => (
+                <motion.span
+                  key={p.id}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="px-3 py-1.5 bg-secondary rounded-full text-sm font-medium"
+                >
+                  {p.name}
+                </motion.span>
+              ))}
+            </AnimatePresence>
+          </div>
+          {players.length > 0 && (
+            <p className="text-muted-foreground text-sm">{players.length} player{players.length !== 1 ? "s" : ""} joined</p>
+          )}
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Question
+  if (quiz.status === "question" && currentQ) {
+    const opts = Array.isArray(currentQ.options) ? currentQ.options : []
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <motion.div
+          key={quiz.current_question_index}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-3xl"
+        >
+          <p className="text-muted-foreground text-sm text-center mb-2">
+            Question {quiz.current_question_index + 1} of {questions.length}
+          </p>
+          <h2 className="text-3xl font-bold text-center mb-8 text-balance">{currentQ.question_text}</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {opts.map((opt, i) => (
+              <div
+                key={i}
+                className="p-6 bg-card border border-border rounded-xl text-center text-lg font-medium"
+              >
+                <span className="text-primary font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
+                {String(opt)}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Answer reveal
+  if (quiz.status === "answer_reveal" && currentQ) {
+    const opts = Array.isArray(currentQ.options) ? currentQ.options : []
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full max-w-3xl"
+        >
+          <p className="text-muted-foreground text-sm text-center mb-2">Answer</p>
+          <h2 className="text-2xl font-bold text-center mb-8 text-balance">{currentQ.question_text}</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {opts.map((opt, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 1 }}
+                animate={{ scale: i === currentQ.correct_index ? 1.05 : 1 }}
+                className={`p-6 rounded-xl text-center text-lg font-medium border-2 transition-colors ${
+                  i === currentQ.correct_index
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "bg-card border-border opacity-50"
+                }`}
+              >
+                <span className="font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
+                {String(opt)}
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Leaderboard
+  if (quiz.status === "leaderboard" || quiz.status === "finished") {
+    const top = players.slice(0, 10)
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <h2 className="text-2xl font-bold text-center mb-6">
+            {quiz.status === "finished" ? "Final Results" : "Leaderboard"}
+          </h2>
+          <div className="space-y-2">
+            {top.map((p, i) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={`flex items-center justify-between p-4 rounded-xl ${
+                  i === 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${
+                    i === 0 ? "bg-primary-foreground/20" : "bg-secondary"
+                  }`}>
+                    {i + 1}
+                  </span>
+                  <span className="font-medium">{p.name}</span>
+                </div>
+                <span className="font-mono font-bold">{p.score}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  return null
+}

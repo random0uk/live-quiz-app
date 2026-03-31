@@ -2,122 +2,121 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { ChevronLeft, Zap, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 
 function JoinForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [gameCode, setGameCode] = useState("")
-  const [playerName, setPlayerName] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [joinCode, setJoinCode] = useState("")
+  const [nickname, setNickname] = useState("")
   const [error, setError] = useState("")
+  const [joining, setJoining] = useState(false)
 
   useEffect(() => {
     const code = searchParams.get("code")
-    if (code) setGameCode(code.toUpperCase())
+    if (code) setJoinCode(code.toUpperCase())
   }, [searchParams])
 
   const handleJoin = async () => {
+    if (!joinCode.trim() || !nickname.trim()) return
+    setJoining(true)
     setError("")
-    if (!gameCode.trim()) return setError("Please enter a game code.")
-    if (!playerName.trim()) return setError("Please enter your name.")
 
-    setLoading(true)
-    try {
-      const res = await fetch("/api/quiz/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ game_code: gameCode.trim(), player_name: playerName.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) return setError(data.error || "Could not join game.")
+    const supabase = createClient()
+    const { data: quiz } = await supabase
+      .from("quizzes")
+      .select("id, status")
+      .eq("game_code", joinCode.toUpperCase())
+      .single()
 
-      sessionStorage.setItem(`player_${data.quiz.id}`, data.player.id)
-      router.push(`/play/${data.quiz.id}`)
-    } catch {
-      setError("Network error. Please try again.")
-    } finally {
-      setLoading(false)
+    if (!quiz) {
+      setError("Game not found")
+      setJoining(false)
+      return
     }
+
+    if (quiz.status !== "lobby") {
+      setError("Game already started")
+      setJoining(false)
+      return
+    }
+
+    const { data: player, error: joinError } = await supabase
+      .from("players")
+      .insert({ quiz_id: quiz.id, name: nickname.trim(), score: 0 })
+      .select()
+      .single()
+
+    if (joinError || !player) {
+      setError("Failed to join")
+      setJoining(false)
+      return
+    }
+
+    localStorage.setItem("player_id", player.id)
+    localStorage.setItem("player_name", nickname.trim())
+    router.push(`/play/${quiz.id}`)
   }
 
   return (
-    <div className="w-full max-w-sm flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col items-center gap-4">
-        <Link href="/" className="self-start p-2 rounded-xl hover:bg-gray-100 transition-colors">
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
-        </Link>
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl shadow-purple-500/30">
-          <Zap className="w-8 h-8 text-white" fill="currentColor" />
-        </div>
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-gray-900">Join Game</h1>
-          <p className="text-gray-500 text-sm mt-1">Enter the code shown on screen</p>
-        </div>
-      </div>
-
-      {/* Form */}
-      <div className="bg-white border border-gray-200 rounded-3xl p-6 flex flex-col gap-5 shadow-xl">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-medium">
-            {error}
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-xs animate-fade-in">
+        <CardContent className="pt-6 space-y-4">
+          <div className="text-center">
+            <h2 className="text-lg font-bold">Join Game</h2>
+            <p className="text-muted-foreground text-sm">Enter the code shown on screen</p>
           </div>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <label className="text-gray-500 text-sm font-semibold">Game Code</label>
-          <input
-            type="text"
-            value={gameCode}
-            onChange={e => setGameCode(e.target.value.toUpperCase())}
-            placeholder="ABC123"
-            maxLength={6}
-            autoCapitalize="characters"
-            className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-5 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-violet-500 focus:bg-white text-3xl font-black text-center tracking-[0.3em] uppercase transition-all"
+          
+          <Input
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            placeholder="Game Code"
+            className="text-center font-mono text-xl tracking-widest uppercase"
+            maxLength={8}
+            autoFocus
           />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="text-gray-500 text-sm font-semibold">Your Name</label>
-          <input
-            type="text"
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            placeholder="Enter your name"
+          
+          <Input
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="Your Name"
             maxLength={20}
-            className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-4 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-violet-500 focus:bg-white text-lg font-semibold transition-all"
           />
-        </div>
-
-        <button
-          onClick={handleJoin}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-5 rounded-2xl font-bold text-xl shadow-xl shadow-purple-500/30 transition-all hover:scale-[1.02] hover:shadow-2xl disabled:opacity-50 active:scale-[0.98] mt-2"
-        >
-          {loading ? "Joining..." : "Join Game"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function JoinLoading() {
-  return (
-    <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 py-20">
-      <Loader2 className="w-10 h-10 text-violet-500 animate-spin" />
-      <p className="text-gray-500">Loading...</p>
+          
+          {error && <p className="text-destructive text-sm text-center">{error}</p>}
+          
+          <Button
+            onClick={handleJoin}
+            disabled={!joinCode.trim() || !nickname.trim() || joining}
+            className="w-full"
+          >
+            {joining ? (
+              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+            ) : (
+              "Join"
+            )}
+          </Button>
+          
+          <Button variant="ghost" onClick={() => router.push("/")} className="w-full text-muted-foreground">
+            Back
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
 export default function JoinPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col items-center justify-center px-4">
-      <Suspense fallback={<JoinLoading />}>
-        <JoinForm />
-      </Suspense>
-    </main>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <JoinForm />
+    </Suspense>
   )
 }

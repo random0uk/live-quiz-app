@@ -17,10 +17,11 @@ export default function HostGamePage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [answers, setAnswers] = useState<Answer[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const [controlling, setControlling] = useState(false)
+  const supabaseRef = useRef(createClient())
 
   const fetchData = useCallback(async () => {
+    const supabase = supabaseRef.current
     const [quizRes, questionsRes, playersRes] = await Promise.all([
       supabase.from("quizzes").select("*").eq("id", id).single(),
       supabase.from("questions").select("*").eq("quiz_id", id).order("position"),
@@ -33,18 +34,20 @@ export default function HostGamePage() {
   }, [id])
 
   const fetchAnswers = useCallback(async (questionId: string) => {
+    const supabase = supabaseRef.current
     const { data } = await supabase.from("answers").select("*").eq("question_id", questionId)
     if (data) setAnswers(data)
   }, [])
 
   useEffect(() => {
     fetchData()
+    const supabase = supabaseRef.current
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel(`host-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
         setQuiz(payload.new as Quiz)
+        setControlling(false)
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, (payload) => {
         setPlayers(prev => [...prev, payload.new as Player])
@@ -62,20 +65,20 @@ export default function HostGamePage() {
       })
       .subscribe()
 
-    channelRef.current = channel
-    return () => { channel.unsubscribe() }
+    return () => { supabase.removeChannel(channel) }
   }, [id, fetchData])
 
-  // Fetch answers when question changes
   useEffect(() => {
     if (!quiz || !questions.length) return
     if (quiz.status === "question" || quiz.status === "answer_reveal") {
       const currentQ = questions[quiz.current_question_index]
       if (currentQ) fetchAnswers(currentQ.id)
     }
-  }, [quiz?.current_question_index, quiz?.status])
+  }, [quiz?.current_question_index, quiz?.status, questions, fetchAnswers])
 
   const control = async (action: string) => {
+    if (controlling) return
+    setControlling(true)
     await fetch(`/api/quiz/${id}/control`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -85,19 +88,16 @@ export default function HostGamePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading game...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   if (!quiz) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Game not found.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Game not found</p>
       </div>
     )
   }
@@ -105,7 +105,87 @@ export default function HostGamePage() {
   const currentQuestion = questions[quiz.current_question_index]
 
   if (quiz.status === "lobby") {
-    return <HostLobby quiz={quiz} players={players} onStart={() => control("start")} />
+    return <HostLobby quiz={quiz} players={players} onStart={() => control("start")} controlling={controlling} />
+  }
+
+  if (quiz.status === "question" && currentQuestion) {
+    return (
+      <HostQuestion
+        question={currentQuestion}
+        questionNumber={quiz.current_question_index + 1}
+        totalQuestions={questions.length}
+        answerCount={answers.filter(a => a.question_id === currentQuestion.id).length}
+        playerCount={players.length}
+        onReveal={() => control("reveal")}
+        controlling={controlling}
+      />
+    )
+  }
+
+  if (quiz.status === "answer_reveal" && currentQuestion) {
+    return (
+      <HostReveal
+        question={currentQuestion}
+        answers={answers.filter(a => a.question_id === currentQuestion.id)}
+        players={players}
+        questionNumber={quiz.current_question_index + 1}
+        totalQuestions={questions.length}
+        onLeaderboard={() => control("leaderboard")}
+        controlling={controlling}
+      />
+    )
+  }
+
+  if (quiz.status === "leaderboard") {
+    return (
+      <HostLeaderboard
+        players={players}
+        questionNumber={quiz.current_question_index + 1}
+        totalQuestions={questions.length}
+        onNext={() => control("next")}
+        controlling={controlling}
+      />
+    )
+  }
+
+  if (quiz.status === "finished") {
+    return <HostFinished players={players} />
+  }
+
+  return null
+}
+  }, [quiz?.current_question_index, quiz?.status, questions, fetchAnswers])
+
+  const control = async (action: string) => {
+    if (controlling) return
+    setControlling(true)
+    await fetch(`/api/quiz/${id}/control`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!quiz) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Game not found</p>
+      </div>
+    )
+  }
+
+  const currentQuestion = questions[quiz.current_question_index]
+
+  if (quiz.status === "lobby") {
+    return <HostLobby quiz={quiz} players={players} onStart={() => control("start")} controlling={controlling} />
   }
 
   if (quiz.status === "question" && currentQuestion) {
@@ -118,6 +198,7 @@ export default function HostGamePage() {
         answerCount={answers.filter(a => a.question_id === currentQuestion.id).length}
         playerCount={players.length}
         onReveal={() => control("reveal")}
+        controlling={controlling}
       />
     )
   }
@@ -125,13 +206,13 @@ export default function HostGamePage() {
   if (quiz.status === "answer_reveal" && currentQuestion) {
     return (
       <HostReveal
-        quiz={quiz}
         question={currentQuestion}
         answers={answers.filter(a => a.question_id === currentQuestion.id)}
         players={players}
         questionNumber={quiz.current_question_index + 1}
         totalQuestions={questions.length}
         onLeaderboard={() => control("leaderboard")}
+        controlling={controlling}
       />
     )
   }
@@ -139,17 +220,17 @@ export default function HostGamePage() {
   if (quiz.status === "leaderboard") {
     return (
       <HostLeaderboard
-        quiz={quiz}
         players={players}
         questionNumber={quiz.current_question_index + 1}
         totalQuestions={questions.length}
         onNext={() => control("next")}
+        controlling={controlling}
       />
     )
   }
 
   if (quiz.status === "finished") {
-    return <HostFinished quiz={quiz} players={players} />
+    return <HostFinished players={players} />
   }
 
   return null

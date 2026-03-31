@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Zap, Plus, Trash2, Play, Settings, ChevronRight, Palette } from "lucide-react"
+import { Plus, Trash2, Play, Copy, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/client"
-import type { Question, OrganizerSettings } from "@/lib/types"
+import type { Question } from "@/lib/types"
 
 interface QuestionForm {
   question_text: string
@@ -18,25 +17,15 @@ interface QuestionForm {
   time_limit: number
 }
 
-const DEFAULT_COLORS = [
-  { bg: "#6c2bd9", btn: "#a855f7", name: "Purple" },
-  { bg: "#2563eb", btn: "#3b82f6", name: "Blue" },
-  { bg: "#059669", btn: "#10b981", name: "Green" },
-  { bg: "#dc2626", btn: "#ef4444", name: "Red" },
-  { bg: "#d97706", btn: "#f59e0b", name: "Orange" },
-  { bg: "#db2777", btn: "#ec4899", name: "Pink" },
-]
-
 export default function OrganizerDashboard() {
   const router = useRouter()
-  const [settings, setSettings] = useState<OrganizerSettings | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [quizTitle, setQuizTitle] = useState("My Quiz")
-  const [themeBg, setThemeBg] = useState("#6c2bd9")
-  const [themeBtn, setThemeBtn] = useState("#a855f7")
-  const [newPin, setNewPin] = useState("")
+  const [customCode, setCustomCode] = useState("")
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const [createdQuizId, setCreatedQuizId] = useState<string | null>(null)
+  const [createdCode, setCreatedCode] = useState<string | null>(null)
   
   const [questionForm, setQuestionForm] = useState<QuestionForm>({
     question_text: "",
@@ -51,39 +40,18 @@ export default function OrganizerDashboard() {
       router.push("/")
       return
     }
-    loadData()
-  }, [router])
-
-  const loadData = async () => {
-    const supabase = createClient()
-    const { data: settingsData } = await supabase
-      .from("organizer_settings")
-      .select("*")
-      .eq("id", 1)
-      .single()
-
-    if (settingsData) {
-      setSettings(settingsData)
-      setThemeBg(settingsData.default_theme_bg)
-      setThemeBtn(settingsData.default_theme_btn)
-      setNewPin(settingsData.pin_code)
-    }
-
-    // Load any draft questions from localStorage
+    
     const savedQuestions = localStorage.getItem("draft_questions")
-    if (savedQuestions) {
-      setQuestions(JSON.parse(savedQuestions))
-    }
+    if (savedQuestions) setQuestions(JSON.parse(savedQuestions))
     const savedTitle = localStorage.getItem("draft_title")
     if (savedTitle) setQuizTitle(savedTitle)
-
+    
     setLoading(false)
-  }
+  }, [router])
 
   const addQuestion = () => {
-    if (!questionForm.question_text.trim() || questionForm.options.some(o => !o.trim())) {
-      return
-    }
+    if (!questionForm.question_text.trim() || questionForm.options.some(o => !o.trim())) return
+    
     const newQ: Question = {
       id: crypto.randomUUID(),
       quiz_id: "",
@@ -92,7 +60,6 @@ export default function OrganizerDashboard() {
       correct_index: questionForm.correct_index,
       time_limit: questionForm.time_limit,
       position: questions.length,
-      created_at: new Date().toISOString(),
     }
     const updated = [...questions, newQ]
     setQuestions(updated)
@@ -111,26 +78,12 @@ export default function OrganizerDashboard() {
     localStorage.setItem("draft_questions", JSON.stringify(updated))
   }
 
-  const saveSettings = async () => {
-    const supabase = createClient()
-    await supabase
-      .from("organizer_settings")
-      .update({
-        pin_code: newPin,
-        default_theme_bg: themeBg,
-        default_theme_btn: themeBtn,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", 1)
-  }
-
-  const startGame = async () => {
+  const createQuiz = async () => {
     if (questions.length === 0) return
     setStarting(true)
-
     localStorage.setItem("draft_title", quizTitle)
 
-    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const gameCode = customCode.trim().toUpperCase() || Math.random().toString(36).substring(2, 8).toUpperCase()
     const supabase = createClient()
 
     const { data: quizData, error: quizError } = await supabase
@@ -141,8 +94,8 @@ export default function OrganizerDashboard() {
         game_code: gameCode,
         status: "lobby",
         current_question_index: 0,
-        theme_bg: themeBg,
-        theme_btn: themeBtn,
+        theme_bg: "#0a0a0a",
+        theme_btn: "#22c55e",
       })
       .select()
       .single()
@@ -163,7 +116,13 @@ export default function OrganizerDashboard() {
 
     await supabase.from("questions").insert(questionsToInsert)
 
-    router.push(`/host/${quizData.id}`)
+    setCreatedQuizId(quizData.id)
+    setCreatedCode(gameCode)
+    setStarting(false)
+  }
+
+  const copyLink = (path: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}${path}`)
   }
 
   const logout = () => {
@@ -173,281 +132,203 @@ export default function OrganizerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-violet-500 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Quiz created - show links
+  if (createdQuizId && createdCode) {
+    const screenUrl = `/screen/${createdQuizId}`
+    const hostUrl = `/host/${createdQuizId}`
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm animate-fade-in">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-xl">Quiz Ready</CardTitle>
+            <p className="text-muted-foreground text-sm">{quizTitle}</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-center p-4 bg-secondary rounded-xl">
+              <p className="text-muted-foreground text-xs mb-1">Join Code</p>
+              <p className="text-3xl font-mono font-bold tracking-widest text-primary">{createdCode}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-xs">Projector Screen</Label>
+              <div className="flex gap-2">
+                <Input value={screenUrl} readOnly className="font-mono text-xs" />
+                <Button size="icon" variant="secondary" onClick={() => copyLink(screenUrl)}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="secondary" onClick={() => window.open(screenUrl, "_blank")}>
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-muted-foreground text-xs">Open this on the projector</p>
+            </div>
+
+            <Button
+              onClick={() => router.push(hostUrl)}
+              className="w-full h-12 font-semibold"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Go to Control Panel
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" fill="currentColor" />
-            </div>
-            <span className="font-bold text-xl text-gray-900">QuizBlitz</span>
-          </div>
-          <Button variant="ghost" onClick={logout} className="text-gray-500">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold">Quiz Builder</h1>
+          <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground text-xs">
             Logout
           </Button>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <Tabs defaultValue="quiz" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="quiz" className="text-base font-semibold">Quiz Builder</TabsTrigger>
-            <TabsTrigger value="settings" className="text-base font-semibold">Settings</TabsTrigger>
-          </TabsList>
+        {/* Quiz Details */}
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Quiz Title</Label>
+              <Input
+                value={quizTitle}
+                onChange={(e) => setQuizTitle(e.target.value)}
+                placeholder="Enter quiz title"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Custom Join Code (optional)</Label>
+              <Input
+                value={customCode}
+                onChange={(e) => setCustomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
+                placeholder="e.g. FUNQUIZ"
+                className="font-mono uppercase tracking-wider"
+                maxLength={8}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Quiz Builder Tab */}
-          <TabsContent value="quiz" className="space-y-6">
-            {/* Quiz Title */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  Quiz Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Quiz Title</Label>
+        {/* Add Question */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Question
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input
+              value={questionForm.question_text}
+              onChange={(e) => setQuestionForm(f => ({ ...f, question_text: e.target.value }))}
+              placeholder="Enter your question"
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              {questionForm.options.map((opt, i) => (
+                <div key={i} className="relative">
                   <Input
-                    value={quizTitle}
-                    onChange={(e) => setQuizTitle(e.target.value)}
-                    placeholder="Enter quiz title"
-                    className="text-lg h-12"
+                    value={opt}
+                    onChange={(e) => {
+                      const newOpts = [...questionForm.options]
+                      newOpts[i] = e.target.value
+                      setQuestionForm(f => ({ ...f, options: newOpts }))
+                    }}
+                    placeholder={`Option ${i + 1}`}
+                    className={`pr-8 text-sm ${questionForm.correct_index === i ? "border-primary bg-primary/10" : ""}`}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setQuestionForm(f => ({ ...f, correct_index: i }))}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs transition-colors ${
+                      questionForm.correct_index === i
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-muted-foreground/30 hover:border-primary"
+                    }`}
+                  >
+                    {questionForm.correct_index === i && "✓"}
+                  </button>
                 </div>
+              ))}
+            </div>
 
-                {/* Theme Color Picker */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Palette className="w-4 h-4" />
-                    Theme Color
-                  </Label>
-                  <div className="flex flex-wrap gap-3">
-                    {DEFAULT_COLORS.map((color) => (
-                      <button
-                        key={color.bg}
-                        onClick={() => {
-                          setThemeBg(color.bg)
-                          setThemeBtn(color.btn)
-                        }}
-                        className={`w-12 h-12 rounded-xl transition-all ${
-                          themeBg === color.bg ? "ring-4 ring-offset-2 ring-gray-400 scale-110" : "hover:scale-105"
-                        }`}
-                        style={{ background: `linear-gradient(135deg, ${color.bg}, ${color.btn})` }}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
-                </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={questionForm.time_limit}
+                onChange={(e) => setQuestionForm(f => ({ ...f, time_limit: Number(e.target.value) }))}
+                className="h-9 px-2 rounded-md border border-input bg-background text-sm"
+              >
+                <option value={10}>10s</option>
+                <option value={15}>15s</option>
+                <option value={20}>20s</option>
+                <option value={30}>30s</option>
+              </select>
+              <Button
+                onClick={addQuestion}
+                disabled={!questionForm.question_text.trim() || questionForm.options.some(o => !o.trim())}
+                size="sm"
+                className="flex-1"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-                {/* Preview Bar */}
+        {/* Questions List */}
+        {questions.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Questions ({questions.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {questions.map((q, i) => (
                 <div
-                  className="h-16 rounded-2xl flex items-center justify-center text-white font-bold text-lg"
-                  style={{ background: `linear-gradient(135deg, ${themeBg}, ${themeBtn})` }}
+                  key={q.id}
+                  className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50"
                 >
-                  Preview: {quizTitle || "My Quiz"}
+                  <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm truncate">{q.question_text}</span>
+                  <button
+                    onClick={() => removeQuestion(q.id)}
+                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Add Question Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Add Question
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Question</Label>
-                  <Input
-                    value={questionForm.question_text}
-                    onChange={(e) => setQuestionForm(f => ({ ...f, question_text: e.target.value }))}
-                    placeholder="Enter your question"
-                    className="text-lg h-12"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {questionForm.options.map((opt, i) => (
-                    <div key={i} className="space-y-1">
-                      <Label className="text-sm text-gray-500">Option {i + 1}</Label>
-                      <div className="relative">
-                        <Input
-                          value={opt}
-                          onChange={(e) => {
-                            const newOpts = [...questionForm.options]
-                            newOpts[i] = e.target.value
-                            setQuestionForm(f => ({ ...f, options: newOpts }))
-                          }}
-                          placeholder={`Answer ${i + 1}`}
-                          className={`pr-10 ${questionForm.correct_index === i ? "border-green-500 bg-green-50" : ""}`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setQuestionForm(f => ({ ...f, correct_index: i }))}
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            questionForm.correct_index === i
-                              ? "bg-green-500 border-green-500 text-white"
-                              : "border-gray-300 hover:border-green-400"
-                          }`}
-                        >
-                          {questionForm.correct_index === i && "✓"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-sm text-gray-500">Time Limit</Label>
-                    <select
-                      value={questionForm.time_limit}
-                      onChange={(e) => setQuestionForm(f => ({ ...f, time_limit: Number(e.target.value) }))}
-                      className="h-10 px-3 rounded-lg border border-gray-200 bg-white"
-                    >
-                      <option value={10}>10 seconds</option>
-                      <option value={15}>15 seconds</option>
-                      <option value={20}>20 seconds</option>
-                      <option value={30}>30 seconds</option>
-                      <option value={45}>45 seconds</option>
-                      <option value={60}>60 seconds</option>
-                    </select>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={addQuestion}
-                  disabled={!questionForm.question_text.trim() || questionForm.options.some(o => !o.trim())}
-                  className="w-full h-12 text-lg font-semibold"
-                  style={{ background: `linear-gradient(135deg, ${themeBg}, ${themeBtn})` }}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Question
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Questions List */}
-            {questions.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Questions ({questions.length})</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {questions.map((q, i) => (
-                    <div
-                      key={q.id}
-                      className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
-                        style={{ background: `linear-gradient(135deg, ${themeBg}, ${themeBtn})` }}
-                      >
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{q.question_text}</p>
-                        <p className="text-sm text-gray-500">{q.time_limit}s • {q.options.length} options</p>
-                      </div>
-                      <button
-                        onClick={() => removeQuestion(q.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Start Game Button */}
-            <Button
-              onClick={startGame}
-              disabled={questions.length === 0 || starting}
-              className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl"
-              style={{ background: `linear-gradient(135deg, ${themeBg}, ${themeBtn})` }}
-            >
-              {starting ? (
-                "Creating Game..."
-              ) : (
-                <>
-                  <Play className="w-6 h-6 mr-2" fill="currentColor" />
-                  Start Game ({questions.length} questions)
-                  <ChevronRight className="w-6 h-6 ml-2" />
-                </>
-              )}
-            </Button>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Account Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Change PIN Code</Label>
-                  <Input
-                    type="password"
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    placeholder="Enter new PIN"
-                    className="text-center text-xl tracking-[0.3em] h-12"
-                    maxLength={6}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Palette className="w-4 h-4" />
-                    Default Theme Color
-                  </Label>
-                  <div className="flex flex-wrap gap-3">
-                    {DEFAULT_COLORS.map((color) => (
-                      <button
-                        key={color.bg}
-                        onClick={() => {
-                          setThemeBg(color.bg)
-                          setThemeBtn(color.btn)
-                        }}
-                        className={`w-12 h-12 rounded-xl transition-all ${
-                          themeBg === color.bg ? "ring-4 ring-offset-2 ring-gray-400 scale-110" : "hover:scale-105"
-                        }`}
-                        style={{ background: `linear-gradient(135deg, ${color.bg}, ${color.btn})` }}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <Button
-                  onClick={saveSettings}
-                  className="w-full h-12 text-lg font-semibold"
-                  style={{ background: `linear-gradient(135deg, ${themeBg}, ${themeBtn})` }}
-                >
-                  Save Settings
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
+        {/* Create Button */}
+        <Button
+          onClick={createQuiz}
+          disabled={questions.length === 0 || starting}
+          className="w-full h-12 font-semibold"
+        >
+          {starting ? (
+            <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <Play className="w-4 h-4 mr-2" />
+              Create Quiz ({questions.length} questions)
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

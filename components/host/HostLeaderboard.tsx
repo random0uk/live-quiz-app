@@ -1,109 +1,71 @@
 "use client"
 
-import { Quiz, Player } from "@/lib/types"
-import { Trophy, Medal, Award, ChevronRight } from "lucide-react"
+import { Player } from "@/lib/types"
+import { ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Props {
-  quiz: Quiz
   players: Player[]
   questionNumber: number
   totalQuestions: number
   onNext: () => void
+  controlling?: boolean
 }
 
-const MEDAL_ICONS = [Trophy, Medal, Award]
-const MEDAL_COLORS = ["#ffd700", "#c0c0c0", "#cd7f32"]
-
-export default function HostLeaderboard({ quiz, players, questionNumber, totalQuestions, onNext }: Props) {
+export default function HostLeaderboard({ players, questionNumber, totalQuestions, onNext, controlling }: Props) {
   const sorted = [...players].sort((a, b) => b.score - a.score)
   const isLastQuestion = questionNumber >= totalQuestions
-  const maxScore = sorted[0]?.score || 1
+  const top5 = sorted.slice(0, 5)
 
   return (
-    <main 
-      className="min-h-screen flex flex-col"
-      style={{ background: `linear-gradient(135deg, ${quiz.theme_bg}15, ${quiz.theme_btn}10)` }}
-    >
-      {/* Header */}
-      <div className="px-6 py-5 flex items-center justify-between">
-        <div className="bg-white rounded-xl px-4 py-2 shadow-sm">
-          <span className="text-gray-700 font-bold">Q{questionNumber}/{totalQuestions}</span>
-        </div>
-        <h2 className="text-2xl font-black text-gray-900">Leaderboard</h2>
-        <div className="w-20" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-sm animate-fade-in">
+        <CardHeader className="text-center pb-2">
+          <CardTitle className="text-lg">Leaderboard</CardTitle>
+          <p className="text-muted-foreground text-sm">Q{questionNumber}/{totalQuestions}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {top5.map((player, i) => (
+            <div
+              key={player.id}
+              className={`flex items-center gap-3 p-3 rounded-xl animate-scale-in ${
+                i === 0 ? "bg-primary text-primary-foreground" : "bg-secondary"
+              }`}
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                i === 0 ? "bg-primary-foreground/20" : "bg-background"
+              }`}>
+                {i + 1}
+              </span>
+              <span className="flex-1 font-medium truncate">{player.name}</span>
+              <span className="font-mono font-bold">{player.score}</span>
+            </div>
+          ))}
 
-      <div className="flex-1 flex flex-col px-6 gap-4 overflow-hidden">
-        <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-4">
-          {sorted.slice(0, 10).map((player, idx) => {
-            const barPct = (player.score / maxScore) * 100
-            const MedalIcon = idx < 3 ? MEDAL_ICONS[idx] : null
-            const isTop3 = idx < 3
+          {sorted.length > 5 && (
+            <p className="text-center text-muted-foreground text-xs">
+              +{sorted.length - 5} more players
+            </p>
+          )}
 
-            return (
-              <div
-                key={player.id}
-                className={`bg-white rounded-2xl px-5 py-4 flex items-center gap-4 shadow-lg animate-in fade-in slide-in-from-right-4 duration-500 ${
-                  isTop3 ? "ring-2" : ""
-                }`}
-                style={{ 
-                  animationDelay: `${idx * 80}ms`,
-                  ringColor: isTop3 ? MEDAL_COLORS[idx] : undefined
-                }}
-              >
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ 
-                    backgroundColor: isTop3 ? `${MEDAL_COLORS[idx]}20` : "#f3f4f6"
-                  }}
-                >
-                  {MedalIcon ? (
-                    <MedalIcon className="w-6 h-6" style={{ color: MEDAL_COLORS[idx] }} />
-                  ) : (
-                    <span className="font-black text-lg text-gray-400">{idx + 1}</span>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-900 font-bold truncate">{player.name}</span>
-                    <span 
-                      className="font-black text-lg ml-3 shrink-0"
-                      style={{ color: isTop3 ? MEDAL_COLORS[idx] : "#6b7280" }}
-                    >
-                      {player.score.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ 
-                        width: `${barPct}%`, 
-                        transitionDelay: `${idx * 80 + 300}ms`,
-                        background: `linear-gradient(90deg, ${quiz.theme_bg}, ${quiz.theme_btn})`
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="p-6 pb-8">
-        <button
-          onClick={onNext}
-          className="w-full text-white py-5 rounded-2xl font-bold text-xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-          style={{ 
-            background: `linear-gradient(135deg, ${quiz.theme_bg}, ${quiz.theme_btn})`,
-            boxShadow: `0 20px 40px ${quiz.theme_bg}40`
-          }}
-        >
-          {isLastQuestion ? "See Final Results" : "Next Question"}
-          <ChevronRight className="w-6 h-6" />
-        </button>
-      </div>
-    </main>
+          <Button
+            onClick={onNext}
+            disabled={controlling}
+            className="w-full mt-2"
+          >
+            {controlling ? (
+              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                {isLastQuestion ? "Final Results" : "Next Question"}
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

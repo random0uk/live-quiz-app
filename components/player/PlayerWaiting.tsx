@@ -1,83 +1,61 @@
 "use client"
 
-import { Quiz } from "@/lib/types"
-import { CheckCircle, XCircle, Star } from "lucide-react"
+import { Check, X } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface Props {
-  quiz: Quiz
   lastResult: { is_correct: boolean; points_earned: number } | null
   playerScore: number
 }
 
-export default function PlayerWaiting({ quiz, lastResult, playerScore }: Props) {
-  return (
-    <main 
-      className="min-h-screen flex flex-col items-center justify-center px-4 gap-6"
-      style={{ background: `linear-gradient(135deg, ${quiz.theme_bg}15, ${quiz.theme_btn}10)` }}
-    >
-      {lastResult !== null ? (
-        <div className="flex flex-col items-center gap-6 w-full max-w-sm">
-          {/* Result */}
-          <div 
-            className={`w-28 h-28 rounded-3xl flex items-center justify-center shadow-2xl ${
-              lastResult.is_correct ? "bg-green-500" : "bg-red-500"
-            }`}
-            style={{ boxShadow: lastResult.is_correct ? "0 20px 40px rgba(34, 197, 94, 0.4)" : "0 20px 40px rgba(239, 68, 68, 0.4)" }}
-          >
-            {lastResult.is_correct ? (
-              <CheckCircle className="w-14 h-14 text-white" />
-            ) : (
-              <XCircle className="w-14 h-14 text-white" />
-            )}
-          </div>
+export default function PlayerWaiting({ lastResult, playerScore }: Props) {
+  if (lastResult) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-xs animate-scale-in">
+          <CardContent className="pt-6 text-center space-y-4">
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${
+              lastResult.is_correct ? "bg-primary" : "bg-destructive"
+            }`}>
+              {lastResult.is_correct ? (
+                <Check className="w-8 h-8 text-primary-foreground" />
+              ) : (
+                <X className="w-8 h-8 text-destructive-foreground" />
+              )}
+            </div>
 
-          <div className="text-center">
-            <h2 className={`text-4xl font-black ${lastResult.is_correct ? "text-green-600" : "text-red-600"}`}>
-              {lastResult.is_correct ? "Correct!" : "Wrong!"}
-            </h2>
-            {lastResult.is_correct && lastResult.points_earned > 0 && (
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <Star className="w-5 h-5 text-yellow-500" fill="currentColor" />
-                <p className="text-gray-600 font-bold text-lg">
-                  +{lastResult.points_earned.toLocaleString()} points
-                </p>
-              </div>
-            )}
-          </div>
+            <div>
+              <p className={`text-2xl font-bold ${lastResult.is_correct ? "text-primary" : "text-destructive"}`}>
+                {lastResult.is_correct ? "Correct!" : "Wrong"}
+              </p>
+              {lastResult.is_correct && lastResult.points_earned > 0 && (
+                <p className="text-muted-foreground text-sm">+{lastResult.points_earned} points</p>
+              )}
+            </div>
 
-          <div className="bg-white rounded-3xl p-6 w-full text-center shadow-xl">
-            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Your Score</p>
-            <p 
-              className="font-black text-5xl"
-              style={{ color: quiz.theme_bg }}
-            >
-              {playerScore.toLocaleString()}
+            <div className="p-4 bg-secondary rounded-xl">
+              <p className="text-muted-foreground text-xs">Your Score</p>
+              <p className="text-3xl font-bold font-mono">{playerScore}</p>
+            </div>
+
+            <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              Waiting for host...
             </p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-4">
-          <div 
-            className="w-14 h-14 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: `${quiz.theme_bg} transparent ${quiz.theme_bg} ${quiz.theme_bg}` }}
-          />
-          <p className="text-gray-500 font-medium">Waiting for answer reveal...</p>
-        </div>
-      )}
-
-      <div className="flex items-center gap-3 bg-white/80 rounded-full px-5 py-3 shadow-lg mt-4">
-        <span className="relative flex h-3 w-3">
-          <span 
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-            style={{ backgroundColor: quiz.theme_bg }}
-          />
-          <span 
-            className="relative inline-flex rounded-full h-3 w-3"
-            style={{ backgroundColor: quiz.theme_bg }}
-          />
-        </span>
-        <p className="text-gray-600 font-medium text-sm">Waiting for host...</p>
+          </CardContent>
+        </Card>
       </div>
-    </main>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-xs">
+        <CardContent className="pt-6 text-center space-y-4">
+          <div className="w-8 h-8 mx-auto border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm">Waiting for answer reveal...</p>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

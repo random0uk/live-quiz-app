@@ -20,17 +20,18 @@ export default function PlayPage() {
   const [answered, setAnswered] = useState<Record<string, boolean>>({})
   const [lastResult, setLastResult] = useState<{ is_correct: boolean; points_earned: number } | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const supabaseRef = useRef(createClient())
 
   const getPlayerId = useCallback(() => {
     if (typeof window === "undefined") return null
-    return sessionStorage.getItem(`player_${id}`)
-  }, [id])
+    return localStorage.getItem("player_id")
+  }, [])
 
   const fetchData = useCallback(async () => {
     const playerId = getPlayerId()
-    if (!playerId) { router.push("/join"); return }
+    if (!playerId) { router.push("/"); return }
+    
+    const supabase = supabaseRef.current
 
     const [quizRes, questionsRes, playerRes, playersRes] = await Promise.all([
       supabase.from("quizzes").select("*").eq("id", id).single(),
@@ -44,10 +45,11 @@ export default function PlayPage() {
     if (playerRes.data) setPlayer(playerRes.data)
     if (playersRes.data) setPlayers(playersRes.data)
     setLoading(false)
-  }, [id, getPlayerId, router, supabase])
+  }, [id, getPlayerId, router])
 
   useEffect(() => {
     fetchData()
+    const supabase = supabaseRef.current
 
     const channel = supabase
       .channel(`play-${id}`)
@@ -67,9 +69,8 @@ export default function PlayPage() {
       })
       .subscribe()
 
-    channelRef.current = channel
-    return () => { channel.unsubscribe() }
-  }, [id, fetchData, getPlayerId, supabase])
+    return () => { supabase.removeChannel(channel) }
+  }, [id, fetchData, getPlayerId])
 
   const handleAnswer = async (selectedIndex: number, timeRemaining: number) => {
     const playerId = getPlayerId()
@@ -78,6 +79,7 @@ export default function PlayPage() {
     const currentQuestion = questions[quiz.current_question_index]
     if (!currentQuestion) return
 
+    // Optimistic update - show answered state immediately
     setAnswered(prev => ({ ...prev, [currentQuestion.id]: true }))
 
     const res = await fetch("/api/quiz/answer", {
@@ -100,19 +102,16 @@ export default function PlayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
-          <p className="text-gray-500">Joining game...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   if (!quiz || !player) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <p className="text-gray-500">Could not connect to game.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Could not connect to game</p>
       </div>
     )
   }
@@ -127,7 +126,6 @@ export default function PlayPage() {
   if (quiz.status === "question" && currentQuestion) {
     return (
       <PlayerQuestion
-        quiz={quiz}
         question={currentQuestion}
         questionNumber={quiz.current_question_index + 1}
         totalQuestions={questions.length}
@@ -138,27 +136,15 @@ export default function PlayPage() {
   }
 
   if (quiz.status === "answer_reveal") {
-    return (
-      <PlayerWaiting
-        quiz={quiz}
-        lastResult={lastResult}
-        playerScore={player.score}
-      />
-    )
+    return <PlayerWaiting lastResult={lastResult} playerScore={player.score} />
   }
 
   if (quiz.status === "leaderboard") {
-    return (
-      <PlayerLeaderboard
-        quiz={quiz}
-        players={players}
-        currentPlayerId={player.id}
-      />
-    )
+    return <PlayerLeaderboard players={players} currentPlayerId={player.id} />
   }
 
   if (quiz.status === "finished") {
-    return <PlayerFinished quiz={quiz} players={players} currentPlayerId={player.id} />
+    return <PlayerFinished players={players} currentPlayerId={player.id} />
   }
 
   return null

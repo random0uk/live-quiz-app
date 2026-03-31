@@ -2,28 +2,66 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Zap, Users, Play, Lock } from "lucide-react"
+import { Zap, Users, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 
-export default function Page() {
+export default function Home() {
   const router = useRouter()
-  const [showPinDialog, setShowPinDialog] = useState(false)
+  const [view, setView] = useState<"home" | "join" | "organizer">("home")
+  const [joinCode, setJoinCode] = useState("")
+  const [nickname, setNickname] = useState("")
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [joining, setJoining] = useState(false)
+
+  const handleJoin = async () => {
+    if (!joinCode.trim() || !nickname.trim()) return
+    setJoining(true)
+    setError("")
+
+    const supabase = createClient()
+    const { data: quiz } = await supabase
+      .from("quizzes")
+      .select("id, status")
+      .eq("game_code", joinCode.toUpperCase())
+      .single()
+
+    if (!quiz) {
+      setError("Game not found")
+      setJoining(false)
+      return
+    }
+
+    if (quiz.status !== "lobby") {
+      setError("Game already started")
+      setJoining(false)
+      return
+    }
+
+    const { data: player, error: joinError } = await supabase
+      .from("players")
+      .insert({ quiz_id: quiz.id, name: nickname.trim(), score: 0 })
+      .select()
+      .single()
+
+    if (joinError || !player) {
+      setError("Failed to join")
+      setJoining(false)
+      return
+    }
+
+    localStorage.setItem("player_id", player.id)
+    localStorage.setItem("player_name", nickname.trim())
+    router.push(`/play/${quiz.id}`)
+  }
 
   const handleOrganizerLogin = async () => {
-    setLoading(true)
+    if (!pin.trim()) return
     setError("")
+
     const supabase = createClient()
     const { data } = await supabase
       .from("organizer_settings")
@@ -31,99 +69,134 @@ export default function Page() {
       .eq("id", 1)
       .single()
 
-    if (data && data.pin_code === pin) {
+    if (data?.pin_code === pin) {
       localStorage.setItem("organizer_auth", "true")
       router.push("/organizer")
     } else {
-      setError("Incorrect PIN. Default PIN is 1234")
+      setError("Wrong PIN")
     }
-    setLoading(false)
   }
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md flex flex-col items-center gap-10">
-
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-purple-500/30">
-            <Zap className="w-12 h-12 text-white" fill="currentColor" />
-          </div>
-          <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-            QuizBlitz
-          </h1>
-          <p className="text-gray-500 text-center text-lg">
-            Live multiplayer quizzes — play with friends!
-          </p>
-        </div>
-
-        {/* Action Cards */}
-        <div className="w-full flex flex-col gap-4">
-          <a href="/join" className="group w-full block">
-            <div className="w-full rounded-3xl bg-gradient-to-r from-violet-500 to-purple-600 p-6 flex items-center justify-between shadow-xl shadow-purple-500/25 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:shadow-purple-500/40 active:scale-[0.98]">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <Play className="w-7 h-7 text-white" fill="currentColor" />
-                </div>
-                <div>
-                  <div className="text-white font-bold text-xl">Join Game</div>
-                  <div className="text-white/70 text-sm">Enter code to play</div>
-                </div>
-              </div>
-              <div className="text-white/60 text-3xl font-light">{">"}</div>
+  // Join view
+  if (view === "join") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-xs animate-fade-in">
+          <CardContent className="pt-6 space-y-4">
+            <div className="text-center">
+              <h2 className="text-lg font-bold">Join Game</h2>
+              <p className="text-muted-foreground text-sm">Enter the code shown on screen</p>
             </div>
-          </a>
-
-          <button
-            onClick={() => setShowPinDialog(true)}
-            className="group w-full text-left"
-          >
-            <div className="w-full rounded-3xl bg-white border-2 border-gray-200 p-6 flex items-center justify-between shadow-lg transition-all duration-300 group-hover:scale-[1.02] group-hover:border-violet-300 group-hover:shadow-xl active:scale-[0.98]">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
-                  <Users className="w-7 h-7 text-gray-700" />
-                </div>
-                <div>
-                  <div className="text-gray-900 font-bold text-xl">Organizer</div>
-                  <div className="text-gray-500 text-sm">Manage quizzes</div>
-                </div>
-              </div>
-              <Lock className="w-5 h-5 text-gray-400" />
-            </div>
-          </button>
-        </div>
+            
+            <Input
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="Game Code"
+              className="text-center font-mono text-xl tracking-widest uppercase"
+              maxLength={8}
+              autoFocus
+            />
+            
+            <Input
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Your Name"
+              maxLength={20}
+            />
+            
+            {error && <p className="text-destructive text-sm text-center">{error}</p>}
+            
+            <Button
+              onClick={handleJoin}
+              disabled={!joinCode.trim() || !nickname.trim() || joining}
+              className="w-full"
+            >
+              {joining ? (
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "Join"
+              )}
+            </Button>
+            
+            <Button variant="ghost" onClick={() => setView("home")} className="w-full text-muted-foreground">
+              Back
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+    )
+  }
 
-      {/* PIN Dialog */}
-      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold">Organizer Login</DialogTitle>
-            <DialogDescription className="text-center text-gray-500">
-              Enter your PIN to access the dashboard
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 pt-4">
+  // Organizer login view
+  if (view === "organizer") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-xs animate-fade-in">
+          <CardContent className="pt-6 space-y-4">
+            <div className="text-center">
+              <h2 className="text-lg font-bold">Organizer</h2>
+              <p className="text-muted-foreground text-sm">Enter your PIN</p>
+            </div>
+            
             <Input
               type="password"
-              placeholder="Enter PIN"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleOrganizerLogin()}
-              className="text-center text-2xl tracking-[0.5em] h-14"
+              placeholder="PIN"
+              className="text-center text-2xl tracking-widest"
               maxLength={6}
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handleOrganizerLogin()}
             />
-            {error && <p className="text-red-500 text-center text-sm font-medium">{error}</p>}
-            <Button
-              onClick={handleOrganizerLogin}
-              disabled={loading || pin.length < 4}
-              className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 border-0"
-            >
-              {loading ? "Checking..." : "Enter"}
+            
+            {error && <p className="text-destructive text-sm text-center">{error}</p>}
+            
+            <Button onClick={handleOrganizerLogin} disabled={!pin.trim()} className="w-full">
+              Login
             </Button>
+            
+            <Button variant="ghost" onClick={() => setView("home")} className="w-full text-muted-foreground">
+              Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Home view
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-xs space-y-6 animate-fade-in">
+        {/* Logo */}
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-primary flex items-center justify-center">
+            <Zap className="w-8 h-8 text-primary-foreground" />
           </div>
-        </DialogContent>
-      </Dialog>
-    </main>
+          <h1 className="text-2xl font-bold tracking-tight">QuizBlitz</h1>
+          <p className="text-muted-foreground text-sm">Live multiplayer quizzes</p>
+        </div>
+
+        {/* Actions */}
+        <div className="space-y-3">
+          <Button
+            onClick={() => setView("join")}
+            className="w-full h-14 text-lg font-semibold"
+          >
+            <Users className="w-5 h-5 mr-2" />
+            Join Game
+          </Button>
+          
+          <Button
+            onClick={() => setView("organizer")}
+            variant="secondary"
+            className="w-full h-12"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Organizer
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }
