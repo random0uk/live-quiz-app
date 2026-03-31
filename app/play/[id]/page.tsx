@@ -54,8 +54,12 @@ export default function PlayPage() {
     const channel = supabase
       .channel(`play-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
-        setQuiz(payload.new as Quiz)
-        setLastResult(null)
+        const newQuiz = payload.new as Quiz
+        setQuiz(newQuiz)
+        // Only clear lastResult when a brand new question starts, not on reveal
+        if (newQuiz.status === "question") {
+          setLastResult(null)
+        }
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {
         const playerId = getPlayerId()

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { Quiz, Question, Player } from "@/lib/types"
@@ -13,6 +13,33 @@ export default function ProjectorScreen() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
+  const [timeLeft, setTimeLeft] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Manage countdown timer when question is active
+  useEffect(() => {
+    if (!quiz || quiz.status !== "question") {
+      if (timerRef.current) clearInterval(timerRef.current)
+      return
+    }
+    const currentQ = questions[quiz.current_question_index]
+    if (!currentQ) return
+
+    setTimeLeft(currentQ.time_limit)
+    if (timerRef.current) clearInterval(timerRef.current)
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [quiz?.status, quiz?.current_question_index, questions])
 
   useEffect(() => {
     const supabase = createClient()
@@ -112,18 +139,38 @@ export default function ProjectorScreen() {
   // Question
   if (quiz.status === "question" && currentQ) {
     const opts = Array.isArray(currentQ.options) ? currentQ.options : []
+    const isUrgent = timeLeft <= 5
+    const progress = (timeLeft / currentQ.time_limit) * 100
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8">
         <motion.div
           key={quiz.current_question_index}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-3xl"
+          className="w-full max-w-3xl space-y-6"
         >
-          <p className="text-muted-foreground text-sm text-center mb-2">
-            Question {quiz.current_question_index + 1} of {questions.length}
-          </p>
-          <h2 className="text-3xl font-bold text-center mb-8 text-balance">{currentQ.question_text}</h2>
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">
+              Question {quiz.current_question_index + 1} of {questions.length}
+            </p>
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center font-mono font-bold text-xl border-2 transition-colors ${
+              isUrgent ? "border-destructive text-destructive animate-pulse" : "border-primary text-primary"
+            }`}>
+              {timeLeft}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? "bg-destructive" : "bg-primary"}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <h2 className="text-3xl font-bold text-center text-balance">{currentQ.question_text}</h2>
+
           <div className="grid grid-cols-2 gap-4">
             {opts.map((opt, i) => (
               <div
