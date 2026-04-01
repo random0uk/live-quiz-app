@@ -17,8 +17,10 @@ export default function Home() {
   const [appName, setAppName] = useState("Awaneies")
   const [organizerName, setOrganizerName] = useState("Organizer")
   const [featuresOpen, setFeaturesOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const supabase = createClient()
     supabase
       .from("organizer_settings")
@@ -31,6 +33,9 @@ export default function Home() {
         if (data?.organizer_name) setOrganizerName(data.organizer_name)
       })
   }, [])
+
+  // Prevent hydration mismatch by skipping SSR
+  if (!mounted) return null
 
   const handleOrganizerLogin = async () => {
     if (!pin.trim()) return
@@ -105,7 +110,7 @@ export default function Home() {
 
   // Home view — half-circle hero top, buttons bottom, no scroll
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden" suppressHydrationWarning>
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Half-circle hero — takes ~55% of screen height */}
       <div className="relative flex flex-col items-center" style={{ height: "55%" }}>
         {/* Oversized ellipse, only bottom portion visible */}
