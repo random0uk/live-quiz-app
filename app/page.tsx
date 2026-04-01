@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Zap, Users, Settings, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,19 @@ export default function Home() {
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
   const [joining, setJoining] = useState(false)
+  const [appName, setAppName] = useState("Awaneies")
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from("organizer_settings")
+      .select("app_name")
+      .eq("id", 1)
+      .single()
+      .then(({ data }) => {
+        if (data?.app_name) setAppName(data.app_name)
+      })
+  }, [])
 
   const handleJoin = async () => {
     if (!joinCode.trim() || !nickname.trim()) return
@@ -205,7 +218,7 @@ export default function Home() {
             <Zap className="w-12 h-12 text-primary-foreground" />
           </div>
           <div className="space-y-1 mt-2">
-            <h1 className="text-3xl font-bold tracking-tight">QuizBlitz</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{appName}</h1>
             <p className="text-muted-foreground text-sm">Live multiplayer quizzes</p>
           </div>
         </div>

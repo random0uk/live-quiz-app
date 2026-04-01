@@ -54,6 +54,8 @@ export default function OrganizerDashboard() {
   const [createdCode, setCreatedCode] = useState<string | null>(null)
   const [form, setForm] = useState<QuestionForm>(DEFAULT_FORM)
   const [uploading, setUploading] = useState(false)
+  const [appName, setAppName] = useState("Awaneies")
+  const [savingName, setSavingName] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem("organizer_auth") !== "true") {
@@ -64,8 +66,19 @@ export default function OrganizerDashboard() {
     if (saved) setQuestions(JSON.parse(saved))
     const savedTitle = localStorage.getItem("draft_title")
     if (savedTitle) setQuizTitle(savedTitle)
+    const supabase = createClient()
+    supabase.from("organizer_settings").select("app_name").eq("id", 1).single().then(({ data }) => {
+      if (data?.app_name) setAppName(data.app_name)
+    })
     setLoading(false)
   }, [router])
+
+  const saveAppName = async () => {
+    setSavingName(true)
+    const supabase = createClient()
+    await supabase.from("organizer_settings").update({ app_name: appName }).eq("id", 1)
+    setSavingName(false)
+  }
 
   // When type changes, reset options accordingly
   const setType = (type: QuestionType) => {
@@ -215,6 +228,24 @@ export default function OrganizerDashboard() {
             <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground text-xs">Logout</Button>
           </div>
         </div>
+
+        {/* App name setting */}
+        <Card>
+          <CardContent className="pt-4 space-y-2">
+            <Label className="text-xs text-muted-foreground">App Name (shown to players)</Label>
+            <div className="flex gap-2">
+              <Input
+                value={appName}
+                onChange={e => setAppName(e.target.value)}
+                placeholder="App name"
+                className="flex-1"
+              />
+              <Button size="sm" variant="secondary" onClick={saveAppName} disabled={savingName || !appName.trim()}>
+                {savingName ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Save"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quiz details */}
         <Card>
