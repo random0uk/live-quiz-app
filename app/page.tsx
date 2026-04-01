@@ -1,61 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Zap, Users, Settings, ArrowLeft } from "lucide-react"
+import { Zap, Settings, ArrowLeft, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
+import FeaturesSheet from "@/components/FeaturesSheet"
 
 export default function Home() {
   const router = useRouter()
-  const [view, setView] = useState<"home" | "join" | "organizer">("home")
-  const [joinCode, setJoinCode] = useState("")
-  const [nickname, setNickname] = useState("")
+  const [view, setView] = useState<"home" | "organizer">("home")
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
-  const [joining, setJoining] = useState(false)
+  const [appName, setAppName] = useState("Awaneies")
+  const [featuresOpen, setFeaturesOpen] = useState(false)
 
-  const handleJoin = async () => {
-    if (!joinCode.trim() || !nickname.trim()) return
-    setJoining(true)
-    setError("")
-
+  useEffect(() => {
     const supabase = createClient()
-    const { data: quiz } = await supabase
-      .from("quizzes")
-      .select("id, status")
-      .eq("game_code", joinCode.toUpperCase())
+    supabase
+      .from("organizer_settings")
+      .select("app_name")
+      .eq("id", 1)
       .single()
-
-    if (!quiz) {
-      setError("Game not found")
-      setJoining(false)
-      return
-    }
-
-    if (quiz.status !== "lobby") {
-      setError("Game already started")
-      setJoining(false)
-      return
-    }
-
-    const { data: player, error: joinError } = await supabase
-      .from("players")
-      .insert({ quiz_id: quiz.id, name: nickname.trim(), score: 0 })
-      .select()
-      .single()
-
-    if (joinError || !player) {
-      setError("Failed to join")
-      setJoining(false)
-      return
-    }
-
-    localStorage.setItem("player_id", player.id)
-    localStorage.setItem("player_name", nickname.trim())
-    router.push(`/play/${quiz.id}`)
-  }
+      .then(({ data }) => {
+        if (data?.app_name) setAppName(data.app_name)
+      })
+  }, [])
 
   const handleOrganizerLogin = async () => {
     if (!pin.trim()) return
@@ -76,80 +47,13 @@ export default function Home() {
     }
   }
 
-  // Join view
-  if (view === "join") {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        {/* Top area with back button */}
-        <div className="p-4">
-          <button
-            onClick={() => { setView("home"); setError(""); setJoinCode(""); setNickname("") }}
-            className="flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-        </div>
-
-        {/* Center content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-full max-w-xs space-y-2 text-center mb-8">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-primary flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <h2 className="text-xl font-bold mt-3">Join Game</h2>
-            <p className="text-muted-foreground text-sm">Enter the code shown on screen</p>
-          </div>
-
-          <div className="w-full max-w-xs space-y-3">
-            <Input
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="Game Code"
-              className="text-center font-mono text-xl tracking-widest uppercase h-14"
-              maxLength={8}
-              autoFocus
-            />
-            <Input
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="Your Name"
-              className="h-12"
-              maxLength={20}
-              onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-            />
-            {error && <p className="text-destructive text-sm text-center">{error}</p>}
-          </div>
-        </div>
-
-        {/* Bottom action */}
-        <div className="p-6 pb-10">
-          <Button
-            onClick={handleJoin}
-            disabled={!joinCode.trim() || !nickname.trim() || joining}
-            className="w-full h-14 text-base font-semibold rounded-2xl"
-          >
-            {joining ? (
-              <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <Users className="w-5 h-5 mr-2" />
-                Join Game
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   // Organizer login view
   if (view === "organizer") {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <div className="p-4">
           <button
-            onClick={() => { setView("home"); setError(""); setPin("") }}
+            onClick={() => { setView("home" as const); setError(""); setPin("") }}
             className="flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -205,7 +109,7 @@ export default function Home() {
             <Zap className="w-12 h-12 text-primary-foreground" />
           </div>
           <div className="space-y-1 mt-2">
-            <h1 className="text-3xl font-bold tracking-tight">QuizBlitz</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{appName}</h1>
             <p className="text-muted-foreground text-sm">Live multiplayer quizzes</p>
           </div>
         </div>
@@ -214,11 +118,11 @@ export default function Home() {
       {/* Bottom actions — pushed to bottom like a real app */}
       <div className="p-6 pb-12 space-y-3 w-full max-w-xs mx-auto">
         <Button
-          onClick={() => setView("join")}
+          onClick={() => setFeaturesOpen(true)}
           className="w-full h-14 text-base font-semibold rounded-2xl"
         >
-          <Users className="w-5 h-5 mr-2" />
-          Join Game
+          <Sparkles className="w-5 h-5 mr-2" />
+          Discover Features
         </Button>
         <Button
           onClick={() => setView("organizer")}
@@ -229,6 +133,8 @@ export default function Home() {
           Organizer
         </Button>
       </div>
+
+      <FeaturesSheet open={featuresOpen} onClose={() => setFeaturesOpen(false)} />
     </div>
   )
 }
