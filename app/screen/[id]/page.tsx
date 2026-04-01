@@ -270,7 +270,7 @@ export default function ProjectorScreen() {
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
                         className="p-3 bg-secondary/60 rounded-xl text-center"
                       >
-                        <div className="w-9 h-9 bg-primary/15 rounded-full flex items-center justify-center mx-auto mb-1.5">
+                        <div className="w-9 h-9 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-1.5">
                           <span className="text-primary font-bold text-sm">{p.name.charAt(0).toUpperCase()}</span>
                         </div>
                         <p className="font-medium text-xs truncate">{p.name}</p>
