@@ -2,9 +2,7 @@
 
 import { useEffect } from "react"
 import { Check, X } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import { useSound } from "@/hooks/use-sound"
-
 interface Props {
   lastResult: { is_correct: boolean; points_earned: number; is_poll?: boolean } | null
   playerScore: number
@@ -13,68 +11,67 @@ interface Props {
 export default function PlayerWaiting({ lastResult, playerScore }: Props) {
   const { play } = useSound()
 
-  // Play correct/wrong sound when result arrives
   useEffect(() => {
     if (lastResult && !lastResult.is_poll) {
       play(lastResult.is_correct ? "correct" : "wrong")
     }
   }, [lastResult, play])
 
-  if (lastResult) {
-    const isPoll = lastResult.is_poll === true
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-xs animate-scale-in">
-          <CardContent className="pt-6 text-center space-y-4">
-            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${
-              isPoll ? "bg-secondary" : lastResult.is_correct ? "bg-primary" : "bg-destructive"
-            }`}>
-              {isPoll ? (
-                <Check className="w-8 h-8 text-foreground" />
-              ) : lastResult.is_correct ? (
-                <Check className="w-8 h-8 text-primary-foreground" />
-              ) : (
-                <X className="w-8 h-8 text-destructive-foreground" />
-              )}
-            </div>
+  const isPoll = lastResult?.is_poll === true
 
-            <div>
-              <p className={`text-2xl font-bold ${isPoll ? "text-foreground" : lastResult.is_correct ? "text-primary" : "text-destructive"}`}>
-                {isPoll ? "Voted!" : lastResult.is_correct ? "Correct!" : "Wrong"}
-              </p>
-              {!isPoll && lastResult.is_correct && lastResult.points_earned > 0 && (
-                <p className="text-muted-foreground text-sm">+{lastResult.points_earned} points</p>
-              )}
-              {isPoll && (
-                <p className="text-muted-foreground text-sm">No points for polls</p>
-              )}
-            </div>
-
-            {!isPoll && (
-              <div className="p-4 bg-secondary rounded-xl">
-                <p className="text-muted-foreground text-xs">Your Score</p>
-                <p className="text-3xl font-bold font-mono">{playerScore}</p>
-              </div>
-            )}
-
-            <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Waiting for host...
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const headerBg = !lastResult
+    ? "bg-primary"
+    : isPoll
+    ? "bg-primary"
+    : lastResult.is_correct
+    ? "bg-[#2ec4b6]"
+    : "bg-[#e84855]"
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-xs">
-        <CardContent className="pt-6 text-center space-y-4">
-          <div className="w-8 h-8 mx-auto border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground text-sm">Waiting for answer reveal...</p>
-        </CardContent>
-      </Card>
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Colored result header */}
+      <div className={`${headerBg} pt-14 pb-10 px-6 flex flex-col items-center gap-4 transition-colors duration-500`}>
+        <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+          {!lastResult ? (
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : isPoll ? (
+            <Check className="w-10 h-10 text-white" />
+          ) : lastResult.is_correct ? (
+            <Check className="w-10 h-10 text-white" />
+          ) : (
+            <X className="w-10 h-10 text-white" />
+          )}
+        </div>
+        <div className="text-center">
+          <p className="text-white text-2xl font-bold">
+            {!lastResult
+              ? "Hold tight..."
+              : isPoll
+              ? "Voted!"
+              : lastResult.is_correct
+              ? "Correct!"
+              : "Wrong!"}
+          </p>
+          {lastResult && !isPoll && lastResult.is_correct && lastResult.points_earned > 0 && (
+            <p className="text-white/80 text-sm mt-1">+{lastResult.points_earned} points</p>
+          )}
+          {isPoll && <p className="text-white/80 text-sm mt-1">No points for polls</p>}
+        </div>
+      </div>
+
+      {/* Score & waiting */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-5">
+        {lastResult && !isPoll && (
+          <div className="w-full rounded-3xl bg-secondary/60 p-6 text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Your Score</p>
+            <p className="text-5xl font-bold font-mono">{playerScore}</p>
+          </div>
+        )}
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+          Waiting for host...
+        </div>
+      </div>
     </div>
   )
 }
