@@ -235,8 +235,8 @@ export default function ProjectorScreen() {
           </div>
         </div>
 
-          {/* RIGHT — Players sidebar */}
-          <div className="w-80 bg-card border-l border-border flex flex-col">
+        {/* RIGHT — Players sidebar */}
+        <div className="w-80 bg-card border-l border-border flex flex-col">
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h2 className="font-bold text-base">Players</h2>
               <motion.span
@@ -281,9 +281,8 @@ export default function ProjectorScreen() {
               )}
             </div>
 
-            <div className="p-4 border-t border-border">
-              <p className="text-center text-xs text-muted-foreground">Game starts when host is ready</p>
-            </div>
+          <div className="p-4 border-t border-border">
+            <p className="text-center text-xs text-muted-foreground">Game starts when host is ready</p>
           </div>
         </div>
       </div>
