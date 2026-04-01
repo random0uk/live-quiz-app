@@ -61,6 +61,8 @@ export default function OrganizerDashboard() {
   const [savingOrgName, setSavingOrgName] = useState(false)
   const [brandColor, setBrandColor] = useState("#7c3aed")
   const [savingColor, setSavingColor] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   useBrandColor(brandColor)
 
@@ -74,10 +76,11 @@ export default function OrganizerDashboard() {
     const savedTitle = localStorage.getItem("draft_title")
     if (savedTitle) setQuizTitle(savedTitle)
     const supabase = createClient()
-    supabase.from("organizer_settings").select("app_name, brand_color, organizer_name").eq("id", 1).single().then(({ data }) => {
+    supabase.from("organizer_settings").select("app_name, brand_color, organizer_name, logo_url").eq("id", 1).single().then(({ data }) => {
       if (data?.app_name) setAppName(data.app_name)
       if (data?.brand_color) setBrandColor(data.brand_color)
       if (data?.organizer_name) setOrganizerName(data.organizer_name)
+      if (data?.logo_url) setLogoUrl(data.logo_url)
     })
     setLoading(false)
   }, [router])
@@ -94,6 +97,26 @@ export default function OrganizerDashboard() {
     const supabase = createClient()
     await supabase.from("organizer_settings").update({ organizer_name: organizerName }).eq("id", 1)
     setSavingOrgName(false)
+  }
+
+  const uploadLogo = async (file: File) => {
+    setUploadingLogo(true)
+    const fd = new FormData()
+    fd.append("file", file)
+    const res = await fetch("/api/upload", { method: "POST", body: fd })
+    const data = await res.json()
+    if (data.url) {
+      setLogoUrl(data.url)
+      const supabase = createClient()
+      await supabase.from("organizer_settings").update({ logo_url: data.url }).eq("id", 1)
+    }
+    setUploadingLogo(false)
+  }
+
+  const removeLogo = async () => {
+    setLogoUrl(null)
+    const supabase = createClient()
+    await supabase.from("organizer_settings").update({ logo_url: null }).eq("id", 1)
   }
 
   const saveBrandColor = async () => {
@@ -285,6 +308,40 @@ export default function OrganizerDashboard() {
                 <Button size="sm" variant="secondary" onClick={saveOrganizerName} disabled={savingOrgName || !organizerName.trim()}>
                   {savingOrgName ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Save"}
                 </Button>
+              </div>
+            </div>
+
+            {/* Logo upload */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Logo (shown top-left on all screens)</Label>
+              <div className="flex items-center gap-3">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="w-12 h-12 rounded-xl object-contain border border-border bg-secondary/40" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl border-2 border-dashed border-border bg-secondary/30 flex items-center justify-center">
+                    <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex gap-2 flex-1">
+                  <label className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f) }}
+                    />
+                    <div className={`w-full h-9 px-3 rounded-md border border-border bg-secondary/50 flex items-center justify-center text-xs font-medium cursor-pointer hover:bg-secondary transition-colors ${uploadingLogo ? "opacity-60 pointer-events-none" : ""}`}>
+                      {uploadingLogo ? (
+                        <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+                      ) : logoUrl ? "Change" : "Upload"}
+                    </div>
+                  </label>
+                  {logoUrl && (
+                    <Button size="sm" variant="ghost" onClick={removeLogo} className="text-destructive hover:text-destructive text-xs px-2">
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
