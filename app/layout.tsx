@@ -10,11 +10,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Awaneies — Live Multiplayer Quizzes',
   description: 'Host and play live multiplayer quiz games',
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-  },
 }
 
 export default function RootLayout({
