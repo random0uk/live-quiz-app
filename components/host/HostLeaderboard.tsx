@@ -1,7 +1,7 @@
 "use client"
 
-import { Player } from "@/lib/types"
-import { ChevronRight } from "lucide-react"
+import { Player, Question } from "@/lib/types"
+import { ChevronRight, HelpCircle, ToggleLeft, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -9,11 +9,24 @@ interface Props {
   players: Player[]
   questionNumber: number
   totalQuestions: number
+  nextQuestion?: Question
   onNext: () => void
   controlling?: boolean
 }
 
-export default function HostLeaderboard({ players, questionNumber, totalQuestions, onNext, controlling }: Props) {
+const TYPE_ICONS = {
+  multiple_choice: HelpCircle,
+  true_false: ToggleLeft,
+  poll: BarChart3,
+}
+
+const TYPE_LABELS = {
+  multiple_choice: "Multiple Choice",
+  true_false: "True / False",
+  poll: "Poll",
+}
+
+export default function HostLeaderboard({ players, questionNumber, totalQuestions, nextQuestion, onNext, controlling }: Props) {
   const sorted = [...players].sort((a, b) => b.score - a.score)
   const isLastQuestion = questionNumber >= totalQuestions
   const top5 = sorted.slice(0, 5)
@@ -48,6 +61,23 @@ export default function HostLeaderboard({ players, questionNumber, totalQuestion
             <p className="text-center text-muted-foreground text-xs">
               +{sorted.length - 5} more players
             </p>
+          )}
+
+          {/* Next Question Preview */}
+          {nextQuestion && !isLastQuestion && (
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl space-y-1.5 mt-2">
+              <p className="text-xs text-muted-foreground font-medium">UP NEXT</p>
+              <div className="flex items-start gap-2">
+                {(() => {
+                  const Icon = TYPE_ICONS[nextQuestion.type] || HelpCircle
+                  return <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                })()}
+                <div className="min-w-0">
+                  <p className="text-xs text-primary font-medium">{TYPE_LABELS[nextQuestion.type] || "Question"}</p>
+                  <p className="text-sm font-medium truncate">{nextQuestion.question_text}</p>
+                </div>
+              </div>
+            </div>
           )}
 
           <Button

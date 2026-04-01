@@ -117,7 +117,7 @@ export default function HostGamePage() {
   )
 
   if (quiz.status === "lobby") {
-    return <HostLobby quiz={quiz} players={players} onStart={() => control("start")} controlling={controlling} />
+    return <HostLobby quiz={quiz} players={players} firstQuestion={questions[0]} onStart={() => control("start")} controlling={controlling} />
   }
 
   if (quiz.status === "question") {
@@ -151,11 +151,13 @@ export default function HostGamePage() {
   }
 
   if (quiz.status === "leaderboard") {
+    const nextQ = questions[quiz.current_question_index + 1]
     return (
       <HostLeaderboard
         players={players}
         questionNumber={quiz.current_question_index + 1}
         totalQuestions={questions.length}
+        nextQuestion={nextQ}
         onNext={() => control("next")}
         controlling={controlling}
       />
