@@ -17,10 +17,9 @@ export default function Home() {
   const [appName, setAppName] = useState("Awaneies")
   const [organizerName, setOrganizerName] = useState("Organizer")
   const [featuresOpen, setFeaturesOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [colorReady, setColorReady] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
     const supabase = createClient()
     supabase
       .from("organizer_settings")
@@ -31,11 +30,12 @@ export default function Home() {
         if (data?.app_name) setAppName(data.app_name)
         if (data?.brand_color) applyBrandColor(data.brand_color)
         if (data?.organizer_name) setOrganizerName(data.organizer_name)
+        setColorReady(true)
       })
   }, [])
 
-  // Prevent hydration mismatch by skipping SSR
-  if (!mounted) return null
+  // Wait for brand color to load before rendering to avoid color flash
+  if (!colorReady) return null
 
   const handleOrganizerLogin = async () => {
     if (!pin.trim()) return

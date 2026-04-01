@@ -155,121 +155,108 @@ export default function ProjectorScreen() {
     </div>
   )
 
-  // Lobby - creative projector screen
+  // Lobby — full-screen projector layout
   if (quiz.status === "lobby") {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
-        {/* Animated background blobs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-          <motion.div animate={{ rotate: -360 }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl" />
-        </div>
+      <div className="h-screen flex overflow-hidden bg-background">
 
-        {/* Top-right Live Quiz badge */}
-        <div className="absolute top-5 right-6 z-20 flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-semibold backdrop-blur-sm">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          Live Quiz
-        </div>
+        {/* LEFT — full-height branded panel */}
+        <div className="flex-1 bg-primary flex flex-col items-center justify-center gap-10 relative overflow-hidden p-12">
+          {/* Subtle circle decoration */}
+          <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-white/5 pointer-events-none" />
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-white/5 pointer-events-none" />
 
-        {/* Join toast notifications — bottom-left stack */}
-        <div className="absolute bottom-6 left-6 z-20 flex flex-col gap-2">
-          <AnimatePresence>
-            {joinToasts.map(toast => (
-              <motion.div
-                key={toast.id}
-                initial={{ opacity: 0, x: -40, scale: 0.9 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -40, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-2xl shadow-lg"
-              >
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
-                  {toast.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-medium">
-                  <span className="font-bold">{toast.name}</span> joined!
-                </span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        <div className="relative z-10 min-h-screen flex">
-          {/* Left — QR code + title */}
-          <div className="flex-1 flex flex-col items-center justify-center p-10 gap-8">
-            {/* ARE YOU READY */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center space-y-1"
+          {/* Heading */}
+          <motion.div
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-2 relative z-10"
+          >
+            <motion.p
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="text-white/60 text-sm font-semibold uppercase tracking-[0.35em]"
             >
-              <motion.p
-                animate={{ opacity: [0.6, 1, 0.6] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                className="text-primary text-sm font-semibold uppercase tracking-[0.3em]"
-              >
-                Are you ready?
-              </motion.p>
-              <h1 className="text-5xl font-black tracking-tight text-balance">Scan the QR code to start the quiz</h1>
-            </motion.div>
+              Are you ready?
+            </motion.p>
+            <h1 className="text-5xl font-black text-white tracking-tight text-balance leading-tight">
+              Scan the QR code<br />to join the quiz
+            </h1>
+          </motion.div>
 
-            {/* QR Code */}
-            <div className="relative">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
-                className="bg-white p-6 rounded-3xl shadow-2xl shadow-primary/20 inline-block"
-              >
-                <QRCodeSVG value={joinUrl} size={220} level="H" />
-              </motion.div>
-              {/* Corner accents */}
-              <div className="absolute -top-2 -left-2 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-xl" />
-              <div className="absolute -top-2 -right-2 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-xl" />
-              <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-xl" />
-              <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-xl" />
-            </div>
+          {/* QR Code card */}
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 220, damping: 22 }}
+            className="relative z-10 bg-white p-6 rounded-3xl shadow-2xl"
+          >
+            <QRCodeSVG value={joinUrl} size={240} level="H" />
+          </motion.div>
 
-            {/* Code */}
-            <div className="text-center space-y-1">
+          {/* Join code */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative z-10 text-center space-y-1"
+          >
+            <p className="text-white/60 text-xs uppercase tracking-widest font-semibold">Join code</p>
+            <motion.p
+              animate={{ scale: [1, 1.03, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+              className="text-3xl font-mono font-black text-white tracking-[0.3em]"
+            >
+              {quiz.game_code}
+            </motion.p>
+          </motion.div>
 
-
-              <motion.p
-                animate={{ scale: [1, 1.025, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="text-4xl font-mono font-bold tracking-widest text-primary"
-              >
-                {quiz.game_code}
-              </motion.p>
-            </div>
-          </div>
-
-          {/* Right — Players sidebar */}
-          <div className="w-80 bg-card/50 backdrop-blur-sm border-l border-border flex flex-col">
-            <div className="p-5 border-b border-border">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-base">Players</h2>
-                <motion.span
-                  key={players.length}
-                  initial={{ scale: 1.3 }}
-                  animate={{ scale: 1 }}
-                  className="px-3 py-0.5 bg-primary text-primary-foreground rounded-full text-sm font-bold"
+          {/* Join toasts bottom-left */}
+          <div className="absolute bottom-6 left-6 z-20 flex flex-col gap-2">
+            <AnimatePresence>
+              {joinToasts.map(toast => (
+                <motion.div
+                  key={toast.id}
+                  initial={{ opacity: 0, x: -40, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -40, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  className="flex items-center gap-3 px-4 py-3 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/20"
                 >
-                  {players.length}
-                </motion.span>
-              </div>
+                  <div className="w-8 h-8 bg-white/25 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {toast.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium text-white">
+                    <span className="font-bold">{toast.name}</span> joined!
+                  </span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+
+          {/* RIGHT — Players sidebar */}
+          <div className="w-80 bg-card border-l border-border flex flex-col">
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-bold text-base">Players</h2>
+              <motion.span
+                key={players.length}
+                initial={{ scale: 1.3 }}
+                animate={{ scale: 1 }}
+                className="px-3 py-0.5 bg-primary text-primary-foreground rounded-full text-sm font-bold"
+              >
+                {players.length}
+              </motion.span>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3">
               {players.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center gap-3 p-4">
                   <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity }}
-                    className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center text-2xl">
-                    👀
+                    className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center">
+                    <span className="text-2xl">👀</span>
                   </motion.div>
-                  <p className="text-muted-foreground text-sm">Waiting for players...</p>
+                  <p className="text-muted-foreground text-sm font-medium">Waiting for players...</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
@@ -281,9 +268,9 @@ export default function ProjectorScreen() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.7 }}
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className="p-3 bg-secondary/70 rounded-xl text-center"
+                        className="p-3 bg-secondary/60 rounded-xl text-center"
                       >
-                        <div className="w-9 h-9 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-1.5">
+                        <div className="w-9 h-9 bg-primary/15 rounded-full flex items-center justify-center mx-auto mb-1.5">
                           <span className="text-primary font-bold text-sm">{p.name.charAt(0).toUpperCase()}</span>
                         </div>
                         <p className="font-medium text-xs truncate">{p.name}</p>
