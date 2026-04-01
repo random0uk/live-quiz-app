@@ -17,8 +17,10 @@ export default function Home() {
   const [appName, setAppName] = useState("Awaneies")
   const [organizerName, setOrganizerName] = useState("Organizer")
   const [featuresOpen, setFeaturesOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const supabase = createClient()
     supabase
       .from("organizer_settings")
@@ -31,6 +33,9 @@ export default function Home() {
         if (data?.organizer_name) setOrganizerName(data.organizer_name)
       })
   }, [])
+
+  // Prevent hydration mismatch by skipping SSR
+  if (!mounted) return null
 
   const handleOrganizerLogin = async () => {
     if (!pin.trim()) return
@@ -103,24 +108,32 @@ export default function Home() {
     )
   }
 
-  // Home view — icon top, buttons bottom
+  // Home view — half-circle hero top, buttons bottom, no scroll
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Top spacer + branding */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-4">
-          <div className="w-24 h-24 mx-auto rounded-3xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30">
-            <Zap className="w-12 h-12 text-primary-foreground" />
-          </div>
-          <div className="space-y-1 mt-2">
-            <h1 className="text-3xl font-bold tracking-tight">{appName}</h1>
-            <p className="text-muted-foreground text-sm">Live multiplayer quizzes</p>
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Half-circle hero — takes ~55% of screen height */}
+      <div className="relative flex flex-col items-center" style={{ height: "55%" }}>
+        {/* Oversized ellipse, only bottom portion visible */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 bg-primary rounded-b-[50%]"
+          style={{ width: "150%", height: "100%" }}
+          aria-hidden="true"
+        />
+        {/* Branding centered inside the circle */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 text-center gap-4">
+          <Zap className="w-14 h-14 text-white" />
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-white">{appName}</h1>
+            <p className="text-white/75 text-sm mt-1">Live multiplayer quizzes</p>
           </div>
         </div>
       </div>
 
-      {/* Bottom actions — pushed to bottom like a real app */}
-      <div className="p-6 pb-6 space-y-3 w-full max-w-xs mx-auto">
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Bottom actions */}
+      <div className="p-6 pb-10 space-y-3 w-full max-w-xs mx-auto">
         <Button
           onClick={() => setFeaturesOpen(true)}
           className="w-full h-14 text-base font-semibold rounded-2xl"
