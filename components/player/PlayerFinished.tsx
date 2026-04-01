@@ -33,29 +33,51 @@ export default function PlayerFinished({ players, currentPlayerId }: Props) {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-5">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+        {/* Thank you message */}
+        <div className="w-full rounded-3xl bg-primary/10 border border-primary/20 p-5 text-center">
+          <p className="text-lg font-bold">Thank you for playing!</p>
+          <p className="text-sm text-muted-foreground mt-1">We hope you had a great time. See you next quiz!</p>
+        </div>
+
+        {/* My score */}
         {me && (
-          <div className="w-full rounded-3xl bg-secondary/60 p-6 text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Final Score</p>
-            <p className="text-5xl font-bold font-mono">{me.score}</p>
-            <p className="text-muted-foreground text-sm mt-1">points</p>
+          <div className="grid grid-cols-3 gap-3 w-full">
+            <div className="p-4 bg-secondary/60 rounded-2xl text-center">
+              <p className="text-2xl font-bold">#{myRank}</p>
+              <p className="text-xs text-muted-foreground mt-1">Rank</p>
+            </div>
+            <div className="p-4 bg-secondary/60 rounded-2xl text-center">
+              <p className="text-2xl font-bold">{me.score}</p>
+              <p className="text-xs text-muted-foreground mt-1">Points</p>
+            </div>
+            <div className="p-4 bg-secondary/60 rounded-2xl text-center">
+              <p className="text-2xl font-bold">{players.length}</p>
+              <p className="text-xs text-muted-foreground mt-1">Players</p>
+            </div>
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-3 w-full">
-          <div className="p-4 bg-secondary/60 rounded-2xl text-center">
-            <p className="text-2xl font-bold">#{myRank}</p>
-            <p className="text-xs text-muted-foreground mt-1">Rank</p>
-          </div>
-          <div className="p-4 bg-secondary/60 rounded-2xl text-center">
-            <p className="text-2xl font-bold">{me?.score || 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">Points</p>
-          </div>
-          <div className="p-4 bg-secondary/60 rounded-2xl text-center">
-            <p className="text-2xl font-bold">{players.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Players</p>
-          </div>
+        {/* Final leaderboard */}
+        <div className="w-full space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-1">Final Leaderboard</p>
+          {sorted.slice(0, 10).map((p, i) => {
+            const isMe = p.id === currentPlayerId
+            const medal = i === 0 ? "1st" : i === 1 ? "2nd" : i === 2 ? "3rd" : `${i + 1}th`
+            return (
+              <div
+                key={p.id}
+                className={`flex items-center justify-between px-4 py-3 rounded-2xl ${isMe ? "bg-primary text-primary-foreground" : "bg-secondary/60"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-bold w-8 ${isMe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{medal}</span>
+                  <span className="font-semibold text-sm">{p.name}{isMe ? " (you)" : ""}</span>
+                </div>
+                <span className="font-mono font-bold text-sm">{p.score}</span>
+              </div>
+            )
+          })}
         </div>
 
         <Link href="/" className="w-full">
