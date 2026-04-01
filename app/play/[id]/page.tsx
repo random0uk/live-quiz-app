@@ -164,6 +164,7 @@ export default function PlayPage() {
           question={currentQuestion}
           quizId={quiz.id}
           playerId={player.id}
+          quizStatus={quiz.status}
           onComplete={async (timeMs) => {
             setAnswered(prev => ({ ...prev, [currentQuestion.id]: true }))
             const res = await fetch("/api/quiz/puzzle-complete", {

@@ -6,84 +6,84 @@ type SoundName = "tick" | "correct" | "wrong" | "fanfare"
 
 export function useSound() {
   const audioCtxRef = useRef<AudioContext | null>(null)
-  const enabledRef = useRef(true)
 
-  const getCtx = useCallback(() => {
-    if (!audioCtxRef.current && typeof window !== "undefined") {
-      audioCtxRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+  // Always resume context — browsers suspend AudioContext until a user gesture
+  const getCtx = useCallback(async () => {
+    if (typeof window === "undefined") return null
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      )()
+    }
+    // Resume if suspended (required on mobile Safari, Chrome mobile, etc.)
+    if (audioCtxRef.current.state === "suspended") {
+      await audioCtxRef.current.resume()
     }
     return audioCtxRef.current
   }, [])
 
-  const playTone = useCallback((frequency: number, duration: number, type: OscillatorType = "sine", volume = 0.3) => {
-    const ctx = getCtx()
+  const playTone = useCallback(async (
+    frequency: number,
+    duration: number,
+    type: OscillatorType = "sine",
+    volume = 0.3,
+    delayMs = 0
+  ) => {
+    const ctx = await getCtx()
     if (!ctx) return
-    
+
+    const startTime = ctx.currentTime + delayMs / 1000
+
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    
+
     osc.type = type
-    osc.frequency.setValueAtTime(frequency, ctx.currentTime)
-    
-    gain.gain.setValueAtTime(volume, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration)
-    
+    osc.frequency.setValueAtTime(frequency, startTime)
+
+    gain.gain.setValueAtTime(volume, startTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+
     osc.connect(gain)
     gain.connect(ctx.destination)
-    
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + duration)
+
+    osc.start(startTime)
+    osc.stop(startTime + duration)
   }, [getCtx])
 
   const play = useCallback((name: SoundName) => {
-    if (!enabledRef.current) return
-    const ctx = getCtx()
-    if (!ctx) return
-
     switch (name) {
       case "tick":
-        // Short click sound
-        playTone(800, 0.05, "square", 0.15)
+        playTone(900, 0.06, "square", 0.12)
         break
-        
+
       case "correct":
-        // Happy ascending ding-ding
-        playTone(523, 0.15, "sine", 0.3) // C5
-        setTimeout(() => playTone(659, 0.15, "sine", 0.3), 100) // E5
-        setTimeout(() => playTone(784, 0.25, "sine", 0.35), 200) // G5
+        // Happy ascending chime: C5 -> E5 -> G5
+        playTone(523, 0.18, "sine", 0.3, 0)
+        playTone(659, 0.18, "sine", 0.3, 110)
+        playTone(784, 0.3,  "sine", 0.35, 220)
         break
-        
+
       case "wrong":
-        // Sad descending buzz
-        playTone(200, 0.15, "sawtooth", 0.25)
-        setTimeout(() => playTone(150, 0.25, "sawtooth", 0.2), 120)
+        // Low descending buzz
+        playTone(220, 0.18, "sawtooth", 0.28, 0)
+        playTone(160, 0.28, "sawtooth", 0.22, 140)
         break
-        
+
       case "fanfare":
-        // Triumphant fanfare
-        const notes = [
-          { f: 523, d: 0.12 }, // C5
-          { f: 523, d: 0.12 }, // C5
-          { f: 523, d: 0.12 }, // C5
-          { f: 523, d: 0.35 }, // C5
-          { f: 415, d: 0.35 }, // Ab4
-          { f: 466, d: 0.35 }, // Bb4
-          { f: 523, d: 0.15 }, // C5
-          { f: 466, d: 0.1 },  // Bb4
-          { f: 523, d: 0.5 },  // C5
+        // Triumphant 4-note fanfare
+        const seq = [
+          { f: 523, d: 0.14, t: 0 },
+          { f: 523, d: 0.14, t: 140 },
+          { f: 523, d: 0.14, t: 280 },
+          { f: 659, d: 0.4,  t: 420 },
+          { f: 587, d: 0.2,  t: 820 },
+          { f: 659, d: 0.6,  t: 1080 },
         ]
-        let time = 0
-        notes.forEach(({ f, d }) => {
-          setTimeout(() => playTone(f, d, "triangle", 0.25), time * 1000)
-          time += d * 0.85
-        })
+        seq.forEach(({ f, d, t }) => playTone(f, d, "triangle", 0.28, t))
         break
     }
-  }, [getCtx, playTone])
+  }, [playTone])
 
-  const setEnabled = useCallback((enabled: boolean) => {
-    enabledRef.current = enabled
-  }, [])
-
-  return { play, setEnabled }
+  return { play }
 }

@@ -9,10 +9,11 @@ interface Props {
   question: Question
   quizId: string
   playerId: string
+  quizStatus: string          // Pass quiz.status so we know when host reveals
   onComplete: (timeMs: number) => void
 }
 
-const GRID = 3 // 3x3 puzzle
+const GRID = 3
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -23,48 +24,72 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-export default function PlayerPuzzle({ question, onComplete }: Props) {
+export default function PlayerPuzzle({ question, quizStatus, onComplete }: Props) {
   const total = GRID * GRID
-  // pieces[i] = which original tile index is at position i
   const [pieces, setPieces] = useState<number[]>(() => shuffle(Array.from({ length: total }, (_, i) => i)))
   const [dragging, setDragging] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [solved, setSolved] = useState(false)
-  const [timeMs, setTimeMs] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(question.time_limit)
+  const [elapsed, setElapsed] = useState(0)
   const startRef = useRef(Date.now())
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const completedRef = useRef(false)
   const { play } = useSound()
 
+  // Countdown timer — stops when solved or when host reveals (status changes)
   useEffect(() => {
     startRef.current = Date.now()
-    intervalRef.current = setInterval(() => {
-      setTimeMs(Date.now() - startRef.current)
-    }, 100)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [])
+    setTimeLeft(question.time_limit)
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!)
+          return 0
+        }
+        return prev - 1
+      })
+      setElapsed(Date.now() - startRef.current)
+    }, 1000)
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [question.time_limit])
+
+  // When quiz status changes to answer_reveal, stop and auto-submit if not solved
+  useEffect(() => {
+    if (quizStatus === "answer_reveal" && !completedRef.current) {
+      completedRef.current = true
+      if (timerRef.current) clearInterval(timerRef.current)
+      // Submit with actual elapsed time (they didn't solve it in time)
+      const elapsedMs = Date.now() - startRef.current
+      onComplete(elapsedMs)
+    }
+  }, [quizStatus, onComplete])
 
   const checkSolved = useCallback((p: number[]) => {
     return p.every((v, i) => v === i)
   }, [])
 
   const swap = (from: number, to: number) => {
-    if (from === to) return
+    if (from === to || completedRef.current) return
     setPieces(prev => {
       const next = [...prev]
       ;[next[from], next[to]] = [next[to], next[from]]
       if (checkSolved(next)) {
         setSolved(true)
-        if (intervalRef.current) clearInterval(intervalRef.current)
-        const elapsed = Date.now() - startRef.current
+        completedRef.current = true
+        if (timerRef.current) clearInterval(timerRef.current)
+        const elapsedMs = Date.now() - startRef.current
         play("correct")
-        setTimeout(() => onComplete(elapsed), 800)
+        setTimeout(() => onComplete(elapsedMs), 700)
       }
       return next
     })
   }
 
-  // Touch drag state
-  const touchStartPos = useRef<{ x: number; y: number; index: number } | null>(null)
+  const touchStartPos = useRef<{ index: number } | null>(null)
+  const isUrgent = timeLeft <= 5 && timeLeft > 0
 
   const tileStyle = (originalIndex: number) => {
     const col = originalIndex % GRID
@@ -78,50 +103,43 @@ export default function PlayerPuzzle({ question, onComplete }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm space-y-4"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm space-y-4">
         {/* Header */}
         <div className="text-center space-y-1">
           <p className="text-muted-foreground text-xs uppercase tracking-widest">Puzzle Challenge</p>
           <h2 className="font-bold text-lg text-balance">{question.question_text || "Put the image together!"}</h2>
         </div>
 
-        {/* Timer */}
-        <div className="flex items-center justify-center gap-2">
-          <div className="px-4 py-1.5 bg-primary/10 rounded-full">
-            <span className="font-mono font-bold text-primary text-sm">
-              {(timeMs / 1000).toFixed(1)}s
-            </span>
+        {/* Timer row */}
+        <div className="flex items-center justify-between px-1">
+          <div className={`px-4 py-1.5 rounded-full text-sm font-mono font-bold transition-colors ${
+            isUrgent ? "bg-destructive/10 text-destructive animate-pulse" : "bg-primary/10 text-primary"
+          }`}>
+            {(elapsed / 1000).toFixed(1)}s
+          </div>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
+            isUrgent ? "border-destructive text-destructive" : "border-border text-muted-foreground"
+          }`}>
+            {timeLeft}s left
           </div>
         </div>
 
         {/* Puzzle grid */}
-        <div
-          className="relative mx-auto rounded-2xl overflow-hidden shadow-xl border border-border"
-          style={{ width: "100%", aspectRatio: "1" }}
-        >
+        <div className="relative mx-auto rounded-2xl overflow-hidden shadow-xl border border-border" style={{ width: "100%", aspectRatio: "1" }}>
           <AnimatePresence>
             {solved && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute inset-0 z-10 flex items-center justify-center bg-primary/80 backdrop-blur-sm rounded-2xl"
-              >
+              <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                className="absolute inset-0 z-10 flex items-center justify-center bg-primary/80 backdrop-blur-sm rounded-2xl">
                 <div className="text-center text-white">
                   <p className="text-5xl font-black mb-2">Done!</p>
-                  <p className="text-xl font-semibold">{(timeMs / 1000).toFixed(2)}s</p>
+                  <p className="text-xl font-semibold">{(elapsed / 1000).toFixed(2)}s</p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div
-            className="grid w-full h-full"
-            style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gap: "2px", background: "var(--border)" }}
-          >
+          <div className="grid w-full h-full"
+            style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gap: "2px", background: "var(--border)" }}>
             {pieces.map((originalIndex, position) => (
               <motion.div
                 key={`pos-${position}`}
@@ -130,10 +148,9 @@ export default function PlayerPuzzle({ question, onComplete }: Props) {
                 onDragStart={() => setDragging(position)}
                 onDragEnd={() => { setDragging(null); setDragOver(null) }}
                 onDragOver={e => { e.preventDefault(); setDragOver(position) }}
-                onDrop={() => { if (dragging !== null) { swap(dragging, position) }; setDragOver(null) }}
-                // Touch support
-                onTouchStart={e => {
-                  touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, index: position }
+                onDrop={() => { if (dragging !== null) swap(dragging, position); setDragOver(null) }}
+                onTouchStart={() => {
+                  touchStartPos.current = { index: position }
                   setDragging(position)
                 }}
                 onTouchEnd={e => {
@@ -142,8 +159,7 @@ export default function PlayerPuzzle({ question, onComplete }: Props) {
                   const el = document.elementFromPoint(touch.clientX, touch.clientY)
                   const targetIdx = el ? parseInt(el.getAttribute("data-pos") ?? "-1") : -1
                   if (targetIdx >= 0 && targetIdx !== position) swap(position, targetIdx)
-                  setDragging(null)
-                  setDragOver(null)
+                  setDragging(null); setDragOver(null)
                   touchStartPos.current = null
                 }}
                 data-pos={position}
@@ -157,12 +173,10 @@ export default function PlayerPuzzle({ question, onComplete }: Props) {
           </div>
         </div>
 
-        {/* Preview thumbnail */}
+        {/* Target thumbnail */}
         <div className="flex items-center gap-3 p-3 bg-secondary/60 rounded-xl">
-          <div
-            className="w-12 h-12 rounded-lg shrink-0 border border-border"
-            style={{ backgroundImage: `url(${question.image_url})`, backgroundSize: "cover", backgroundPosition: "center" }}
-          />
+          <div className="w-12 h-12 rounded-lg shrink-0 border border-border"
+            style={{ backgroundImage: `url(${question.image_url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
           <div>
             <p className="text-xs font-medium">Target image</p>
             <p className="text-xs text-muted-foreground">Drag tiles to match this</p>

@@ -16,6 +16,8 @@ export default function ProjectorScreen() {
   const [answers, setAnswers] = useState<{ selected_index: number; is_correct: boolean; question_id: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
+  const [joinToasts, setJoinToasts] = useState<{ id: string; name: string }[]>([])
+  const prevPlayerIdsRef = useRef<Set<string>>(new Set())
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { play } = useSound()
 
@@ -96,7 +98,20 @@ export default function ProjectorScreen() {
           }
         }
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, (payload) => {
+        const newPlayer = payload.new as Player
+        supabase.from("players").select("*").eq("quiz_id", id).order("score", { ascending: false }).then(({ data }) => {
+          if (data) setPlayers(data)
+        })
+        // Show join toast if this is truly a new player
+        if (!prevPlayerIdsRef.current.has(newPlayer.id)) {
+          prevPlayerIdsRef.current.add(newPlayer.id)
+          const toastId = crypto.randomUUID()
+          setJoinToasts(prev => [...prev, { id: toastId, name: newPlayer.name }])
+          setTimeout(() => setJoinToasts(prev => prev.filter(t => t.id !== toastId)), 3000)
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {
         supabase.from("players").select("*").eq("quiz_id", id).order("score", { ascending: false }).then(({ data }) => {
           if (data) setPlayers(data)
         })
@@ -140,129 +155,147 @@ export default function ProjectorScreen() {
     </div>
   )
 
-  // Lobby - show QR and join code with creative design
+  // Lobby - creative projector screen
   if (quiz.status === "lobby") {
     return (
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
-        {/* Animated background shapes */}
+        {/* Animated background blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl"
-          />
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+          <motion.div animate={{ rotate: -360 }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
+            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-gradient-to-tr from-primary/10 to-transparent rounded-full blur-3xl" />
+        </div>
+
+        {/* Top-right Live Quiz badge */}
+        <div className="absolute top-5 right-6 z-20 flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-semibold backdrop-blur-sm">
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          Live Quiz
+        </div>
+
+        {/* Join toast notifications — bottom-left stack */}
+        <div className="absolute bottom-6 left-6 z-20 flex flex-col gap-2">
+          <AnimatePresence>
+            {joinToasts.map(toast => (
+              <motion.div
+                key={toast.id}
+                initial={{ opacity: 0, x: -40, scale: 0.9 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -40, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-2xl shadow-lg"
+              >
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                  {toast.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium">
+                  <span className="font-bold">{toast.name}</span> joined!
+                </span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
 
         <div className="relative z-10 min-h-screen flex">
-          {/* Left side - QR Code */}
-          <div className="flex-1 flex flex-col items-center justify-center p-8">
+          {/* Left — QR code + title */}
+          <div className="flex-1 flex flex-col items-center justify-center p-10 gap-8">
+            {/* ARE YOU READY */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center space-y-6"
+              className="text-center space-y-1"
             >
-              <div className="space-y-2">
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium"
-                >
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  Live Quiz
-                </motion.div>
-                <h1 className="text-5xl font-bold tracking-tight text-balance">{quiz.title}</h1>
-              </div>
-
-              <div className="relative">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-white p-6 rounded-3xl shadow-2xl shadow-primary/20 inline-block"
-                >
-                  <QRCodeSVG value={joinUrl} size={240} level="H" />
-                </motion.div>
-                {/* Decorative corner accents */}
-                <div className="absolute -top-2 -left-2 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-xl" />
-                <div className="absolute -top-2 -right-2 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-xl" />
-                <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-xl" />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-xl" />
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm uppercase tracking-widest">Scan to join or enter code</p>
-                <motion.p
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: [1, 1.02, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="text-6xl font-mono font-black tracking-[0.3em] text-primary"
-                >
-                  {quiz.game_code}
-                </motion.p>
-              </div>
+              <motion.p
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                className="text-primary text-sm font-semibold uppercase tracking-[0.3em]"
+              >
+                Are you ready?
+              </motion.p>
+              <h1 className="text-6xl font-black tracking-tight text-balance">{quiz.title}</h1>
             </motion.div>
+
+            {/* QR Code */}
+            <div className="relative">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
+                className="bg-white p-6 rounded-3xl shadow-2xl shadow-primary/20 inline-block"
+              >
+                <QRCodeSVG value={joinUrl} size={220} level="H" />
+              </motion.div>
+              {/* Corner accents */}
+              <div className="absolute -top-2 -left-2 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-xl" />
+              <div className="absolute -top-2 -right-2 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-xl" />
+              <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-xl" />
+              <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-xl" />
+            </div>
+
+            {/* Code */}
+            <div className="text-center space-y-1">
+              <p className="text-muted-foreground text-xs uppercase tracking-widest">Scan to join or enter code at</p>
+              <p className="text-muted-foreground text-sm font-mono">{typeof window !== "undefined" ? window.location.origin : ""}</p>
+              <motion.p
+                animate={{ scale: [1, 1.025, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-7xl font-mono font-black tracking-[0.25em] text-primary"
+              >
+                {quiz.game_code}
+              </motion.p>
+            </div>
           </div>
 
-          {/* Right side - Players */}
-          <div className="w-96 bg-card/50 backdrop-blur-sm border-l border-border flex flex-col">
-            <div className="p-6 border-b border-border">
+          {/* Right — Players sidebar */}
+          <div className="w-80 bg-card/50 backdrop-blur-sm border-l border-border flex flex-col">
+            <div className="p-5 border-b border-border">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-lg">Players</h2>
+                <h2 className="font-semibold text-base">Players</h2>
                 <motion.span
                   key={players.length}
-                  initial={{ scale: 1.2 }}
+                  initial={{ scale: 1.3 }}
                   animate={{ scale: 1 }}
-                  className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm font-bold"
+                  className="px-3 py-0.5 bg-primary text-primary-foreground rounded-full text-sm font-bold"
                 >
                   {players.length}
                 </motion.span>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+
+            <div className="flex-1 overflow-y-auto p-3">
               {players.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                  <motion.div
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4"
-                  >
-                    <span className="text-3xl">👀</span>
+                <div className="h-full flex flex-col items-center justify-center text-center gap-3 p-4">
+                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity }}
+                    className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center text-2xl">
+                    👀
                   </motion.div>
-                  <p className="text-muted-foreground">Waiting for players...</p>
-                  <p className="text-sm text-muted-foreground mt-1">Scan the QR code to join!</p>
+                  <p className="text-muted-foreground text-sm">Waiting for players...</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <AnimatePresence mode="popLayout">
-                    {players.map((p, i) => (
+                    {players.map((p) => (
                       <motion.div
                         key={p.id}
-                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.7, y: 16 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="p-3 bg-secondary/80 rounded-xl text-center"
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                        className="p-3 bg-secondary/70 rounded-xl text-center"
                       >
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <span className="text-primary font-bold">{p.name.charAt(0).toUpperCase()}</span>
+                        <div className="w-9 h-9 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-1.5">
+                          <span className="text-primary font-bold text-sm">{p.name.charAt(0).toUpperCase()}</span>
                         </div>
-                        <p className="font-medium text-sm truncate">{p.name}</p>
+                        <p className="font-medium text-xs truncate">{p.name}</p>
                       </motion.div>
                     ))}
                   </AnimatePresence>
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-border bg-secondary/30">
-              <p className="text-center text-sm text-muted-foreground">
-                Game starts when host is ready
-              </p>
+
+            <div className="p-4 border-t border-border">
+              <p className="text-center text-xs text-muted-foreground">Game starts when host is ready</p>
             </div>
           </div>
         </div>
