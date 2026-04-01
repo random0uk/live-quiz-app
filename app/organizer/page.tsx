@@ -63,6 +63,7 @@ export default function OrganizerDashboard() {
   const [savingColor, setSavingColor] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoError, setLogoError] = useState<string | null>(null)
 
   useBrandColor(brandColor)
 
@@ -101,14 +102,23 @@ export default function OrganizerDashboard() {
 
   const uploadLogo = async (file: File) => {
     setUploadingLogo(true)
-    const fd = new FormData()
-    fd.append("file", file)
-    const res = await fetch("/api/upload", { method: "POST", body: fd })
-    const data = await res.json()
-    if (data.url) {
-      setLogoUrl(data.url)
-      const supabase = createClient()
-      await supabase.from("organizer_settings").update({ logo_url: data.url }).eq("id", 1)
+    setLogoError(null)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      fd.append("type", "logo")
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setLogoUrl(data.url)
+        const supabase = createClient()
+        const { error } = await supabase.from("organizer_settings").update({ logo_url: data.url }).eq("id", 1)
+        if (error) setLogoError("Saved to storage but DB update failed: " + error.message)
+      } else {
+        setLogoError(data.error || "Upload failed — check BLOB_READ_WRITE_TOKEN is set on your server")
+      }
+    } catch (e: unknown) {
+      setLogoError("Upload failed: " + (e instanceof Error ? e.message : String(e)))
     }
     setUploadingLogo(false)
   }
@@ -343,6 +353,9 @@ export default function OrganizerDashboard() {
                   )}
                 </div>
               </div>
+              {logoError && (
+                <p className="text-xs text-destructive mt-1">{logoError}</p>
+              )}
             </div>
 
             {/* Brand color */}
