@@ -178,35 +178,33 @@ export default function FeaturesSheet({ open, onClose }: FeaturesSheetProps) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-3xl overflow-hidden"
-            style={{ maxHeight: "90vh" }}
+            className="fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-3xl flex flex-col overflow-hidden"
+            style={{ height: "88vh" }}
           >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
+            {/* Handle + close row */}
+            <div className="relative flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 rounded-full bg-border" />
+              <button
+                onClick={onClose}
+                className="absolute right-4 top-2 w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Close */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Progress dots */}
+            <div className="flex justify-center gap-1.5 pt-2 pb-1 shrink-0">
+              {SLIDES.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => go(i)}
+                  className={`transition-all rounded-full ${i === slide ? "w-6 h-2 bg-primary" : "w-2 h-2 bg-border"}`}
+                />
+              ))}
+            </div>
 
-            {/* Slide content */}
-            <div className="px-6 pb-8 overflow-y-auto" style={{ maxHeight: "calc(90vh - 40px)" }}>
-              {/* Progress dots */}
-              <div className="flex justify-center gap-1.5 mb-6">
-                {SLIDES.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => go(i)}
-                    className={`transition-all rounded-full ${i === slide ? "w-6 h-2 bg-primary" : "w-2 h-2 bg-border"}`}
-                  />
-                ))}
-              </div>
-
+            {/* Slide content — fills remaining height, no scroll */}
+            <div className="flex-1 overflow-hidden px-6">
               <AnimatePresence mode="wait" custom={dir}>
                 <motion.div
                   key={slide}
@@ -220,7 +218,7 @@ export default function FeaturesSheet({ open, onClose }: FeaturesSheetProps) {
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="flex flex-col items-center gap-6"
+                  className="flex flex-col items-center justify-center gap-4 h-full"
                 >
                   {/* Tag */}
                   <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full uppercase tracking-wider">
@@ -241,31 +239,31 @@ export default function FeaturesSheet({ open, onClose }: FeaturesSheetProps) {
                   </p>
                 </motion.div>
               </AnimatePresence>
+            </div>
 
-              {/* Navigation */}
-              <div className="flex items-center justify-between mt-8">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => go(slide - 1)}
-                  disabled={slide === 0}
-                  className="gap-1"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Back
+            {/* Navigation — pinned to bottom */}
+            <div className="flex items-center justify-between px-6 py-4 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => go(slide - 1)}
+                disabled={slide === 0}
+                className="gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </Button>
+
+              {slide < SLIDES.length - 1 ? (
+                <Button size="sm" onClick={() => go(slide + 1)} className="gap-1 px-5 rounded-xl">
+                  Next
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
-
-                {slide < SLIDES.length - 1 ? (
-                  <Button size="sm" onClick={() => go(slide + 1)} className="gap-1 px-5 rounded-xl">
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={onClose} className="px-5 rounded-xl">
-                    Got it
-                  </Button>
-                )}
-              </div>
+              ) : (
+                <Button size="sm" onClick={onClose} className="px-5 rounded-xl">
+                  Got it
+                </Button>
+              )}
             </div>
           </motion.div>
         </>
