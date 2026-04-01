@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Quiz, Question, Player } from "@/lib/types"
 import { QRCodeSVG } from "qrcode.react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useSound } from "@/hooks/use-sound"
 
 export default function ProjectorScreen() {
   const { id } = useParams<{ id: string }>()
@@ -16,6 +17,7 @@ export default function ProjectorScreen() {
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { play } = useSound()
 
   // Manage countdown timer when question is active
   useEffect(() => {
@@ -35,12 +37,23 @@ export default function ProjectorScreen() {
           clearInterval(timerRef.current!)
           return 0
         }
+        // Play tick in final 5 seconds
+        if (prev <= 6 && prev > 1) {
+          play("tick")
+        }
         return prev - 1
       })
     }, 1000)
 
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [quiz?.status, quiz?.current_question_index, questions])
+  }, [quiz?.status, quiz?.current_question_index, questions, play])
+
+  // Play fanfare when leaderboard shows
+  useEffect(() => {
+    if (quiz?.status === "leaderboard" || quiz?.status === "finished") {
+      play("fanfare")
+    }
+  }, [quiz?.status, play])
 
   useEffect(() => {
     const supabase = createClient()

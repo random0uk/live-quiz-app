@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Question } from "@/lib/types"
 import { Check } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useSound } from "@/hooks/use-sound"
 
 interface Props {
   question: Question
@@ -16,6 +17,7 @@ interface Props {
 export default function PlayerQuestion({ question, questionNumber, totalQuestions, hasAnswered, onAnswer }: Props) {
   const [timeLeft, setTimeLeft] = useState(question.time_limit)
   const [selected, setSelected] = useState<number | null>(null)
+  const { play } = useSound()
 
   useEffect(() => {
     setTimeLeft(question.time_limit)
@@ -27,6 +29,13 @@ export default function PlayerQuestion({ question, questionNumber, totalQuestion
     const t = setTimeout(() => setTimeLeft(prev => prev - 1), 1000)
     return () => clearTimeout(t)
   }, [timeLeft, hasAnswered])
+
+  // Play tick sound in final 5 seconds
+  useEffect(() => {
+    if (timeLeft <= 5 && timeLeft > 0 && !hasAnswered) {
+      play("tick")
+    }
+  }, [timeLeft, hasAnswered, play])
 
   const handleSelect = (idx: number) => {
     if (hasAnswered || selected !== null) return

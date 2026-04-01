@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect } from "react"
 import { Player } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSound } from "@/hooks/use-sound"
 
 interface Props {
   players: Player[]
@@ -9,7 +11,13 @@ interface Props {
 }
 
 export default function PlayerLeaderboard({ players, currentPlayerId }: Props) {
+  const { play } = useSound()
   const sorted = [...players].sort((a, b) => b.score - a.score)
+
+  // Play fanfare when leaderboard appears
+  useEffect(() => {
+    play("fanfare")
+  }, [play])
   const myRank = sorted.findIndex(p => p.id === currentPlayerId) + 1
   const me = sorted.find(p => p.id === currentPlayerId)
   const top5 = sorted.slice(0, 5)

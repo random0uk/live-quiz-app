@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect } from "react"
 import { Check, X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useSound } from "@/hooks/use-sound"
 
 interface Props {
   lastResult: { is_correct: boolean; points_earned: number; is_poll?: boolean } | null
@@ -9,6 +11,15 @@ interface Props {
 }
 
 export default function PlayerWaiting({ lastResult, playerScore }: Props) {
+  const { play } = useSound()
+
+  // Play correct/wrong sound when result arrives
+  useEffect(() => {
+    if (lastResult && !lastResult.is_poll) {
+      play(lastResult.is_correct ? "correct" : "wrong")
+    }
+  }, [lastResult, play])
+
   if (lastResult) {
     const isPoll = lastResult.is_poll === true
     return (
