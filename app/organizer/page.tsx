@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Trash2, Play, Copy, ExternalLink } from "lucide-react"
+import Link from "next/link"
+import { Plus, Trash2, Play, Copy, ExternalLink, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
-import type { Question, QuestionType } from "@/lib/types"
+import type { Question, QuestionType, QuizMode } from "@/lib/types"
 
 interface QuestionForm {
   question_text: string
@@ -24,6 +25,13 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   poll: "Poll",
 }
 
+const MODE_INFO: Record<QuizMode, { label: string; desc: string }> = {
+  classic: { label: "Classic", desc: "Standard scoring, points for correct answers" },
+  fastest_finger: { label: "Fastest Finger", desc: "Only the fastest correct answer wins points" },
+  elimination: { label: "Elimination", desc: "Wrong answer = you're out!" },
+  team: { label: "Team Mode", desc: "Players join teams, team scores combined" },
+}
+
 const DEFAULT_FORM: QuestionForm = {
   question_text: "",
   type: "multiple_choice",
@@ -37,6 +45,7 @@ export default function OrganizerDashboard() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [quizTitle, setQuizTitle] = useState("My Quiz")
   const [customCode, setCustomCode] = useState("")
+  const [mode, setMode] = useState<QuizMode>("classic")
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [createdQuizId, setCreatedQuizId] = useState<string | null>(null)
@@ -103,7 +112,7 @@ export default function OrganizerDashboard() {
 
     const { data: quizData, error: quizError } = await supabase
       .from("quizzes")
-      .insert({ title: quizTitle, host_name: "Organizer", game_code: gameCode, status: "lobby", current_question_index: 0, theme_bg: "#0a0a0a", theme_btn: "#7c3aed" })
+      .insert({ title: quizTitle, host_name: "Organizer", game_code: gameCode, status: "lobby", mode, current_question_index: 0, theme_bg: "#ffffff", theme_btn: "#7c3aed" })
       .select()
       .single()
 
@@ -180,7 +189,15 @@ export default function OrganizerDashboard() {
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold">Quiz Builder</h1>
-          <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground text-xs">Logout</Button>
+          <div className="flex items-center gap-2">
+            <Link href="/organizer/history">
+              <Button variant="ghost" size="sm" className="text-muted-foreground text-xs">
+                <History className="w-3 h-3 mr-1" />
+                History
+              </Button>
+            </Link>
+            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground text-xs">Logout</Button>
+          </div>
         </div>
 
         {/* Quiz details */}
@@ -199,6 +216,26 @@ export default function OrganizerDashboard() {
                 className="font-mono uppercase tracking-wider"
                 maxLength={8}
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Game Mode</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(MODE_INFO) as QuizMode[]).map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    className={`p-3 rounded-xl border-2 text-left transition-colors ${
+                      mode === m
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-secondary/30 hover:border-primary/50"
+                    }`}
+                  >
+                    <p className={`text-sm font-medium ${mode === m ? "text-primary" : ""}`}>{MODE_INFO[m].label}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{MODE_INFO[m].desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,5 @@
 export type QuizStatus = 'lobby' | 'question' | 'answer_reveal' | 'leaderboard' | 'finished'
+export type QuizMode = 'classic' | 'fastest_finger' | 'elimination' | 'team'
 
 export interface Quiz {
   id: string
@@ -6,6 +7,7 @@ export interface Quiz {
   host_name: string
   game_code: string
   status: QuizStatus
+  mode: QuizMode
   current_question_index: number
   theme_bg: string
   theme_btn: string
@@ -39,6 +41,8 @@ export interface Player {
   name: string
   score: number
   joined_at: string
+  eliminated: boolean
+  team?: string
 }
 
 export interface Answer {
@@ -50,4 +54,14 @@ export interface Answer {
   is_correct: boolean
   points_earned: number
   answered_at: string
+  answer_order?: number
+}
+
+export interface Team {
+  id: string
+  quiz_id: string
+  name: string
+  color: string
+  score: number
+  created_at: string
 }
