@@ -65,6 +65,10 @@ export default function ProjectorScreen() {
         if (payload.new) {
           const newQuiz = payload.new as Quiz
           setQuiz(newQuiz)
+          // Always ensure questions are loaded on any status change
+          supabase.from("questions").select("*").eq("quiz_id", id).order("position").then(({ data }) => {
+            if (data && data.length > 0) setQuestions(data)
+          })
           // Fetch answers when moving to reveal
           if (newQuiz.status === "answer_reveal") {
             supabase.from("questions").select("id").eq("quiz_id", id).order("position").then(({ data: qs }) => {

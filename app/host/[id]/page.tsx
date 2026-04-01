@@ -46,8 +46,13 @@ export default function HostGamePage() {
     const channel = supabase
       .channel(`host-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
-        setQuiz(payload.new as Quiz)
+        const updated = payload.new as Quiz
+        setQuiz(updated)
         setControlling(false)
+        // If questions haven't loaded yet, fetch them now
+        supabase.from("questions").select("*").eq("quiz_id", id).order("position").then(({ data }) => {
+          if (data && data.length > 0) setQuestions(data)
+        })
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, (payload) => {
         setPlayers(prev => [...prev, payload.new as Player])

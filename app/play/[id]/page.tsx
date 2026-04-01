@@ -56,9 +56,12 @@ export default function PlayPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
         const newQuiz = payload.new as Quiz
         setQuiz(newQuiz)
-        // Only clear lastResult when a brand new question starts, not on reveal
         if (newQuiz.status === "question") {
           setLastResult(null)
+          // Ensure questions are loaded
+          supabase.from("questions").select("*").eq("quiz_id", id).order("position").then(({ data }) => {
+            if (data && data.length > 0) setQuestions(data)
+          })
         }
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {

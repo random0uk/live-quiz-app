@@ -109,17 +109,23 @@ export default function OrganizerDashboard() {
 
     if (quizError || !quizData) { setStarting(false); return }
 
-    await supabase.from("questions").insert(
+    const { error: qError } = await supabase.from("questions").insert(
       questions.map((q, i) => ({
         quiz_id: quizData.id,
         question_text: q.question_text,
-        type: q.type,
-        options: q.options,
-        correct_index: q.correct_index,
-        time_limit: q.time_limit,
+        type: q.type ?? "multiple_choice",
+        options: q.type === "true_false" ? ["True", "False"] : q.options,
+        correct_index: q.correct_index ?? 0,
+        time_limit: q.time_limit ?? 20,
         position: i,
       }))
     )
+
+    if (qError) {
+      console.error("[v0] questions insert error:", qError.message)
+      setStarting(false)
+      return
+    }
 
     setCreatedQuizId(quizData.id)
     setCreatedCode(gameCode)
