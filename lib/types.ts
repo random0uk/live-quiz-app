@@ -20,6 +20,8 @@ export interface OrganizerSettings {
   updated_at: string
 }
 
+export type QuestionType = 'multiple_choice' | 'true_false' | 'poll'
+
 export interface Question {
   id: string
   quiz_id: string
@@ -28,6 +30,7 @@ export interface Question {
   correct_index: number
   time_limit: number
   position: number
+  type: QuestionType
 }
 
 export interface Player {

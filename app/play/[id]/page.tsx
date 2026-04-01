@@ -18,7 +18,7 @@ export default function PlayPage() {
   const [player, setPlayer] = useState<Player | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
   const [answered, setAnswered] = useState<Record<string, boolean>>({})
-  const [lastResult, setLastResult] = useState<{ is_correct: boolean; points_earned: number } | null>(null)
+  const [lastResult, setLastResult] = useState<{ is_correct: boolean; points_earned: number; is_poll?: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
   const supabaseRef = useRef(createClient())
 
@@ -100,7 +100,7 @@ export default function PlayPage() {
     })
     const data = await res.json()
     if (res.ok) {
-      setLastResult({ is_correct: data.is_correct, points_earned: data.points_earned })
+      setLastResult({ is_correct: data.is_correct, points_earned: data.points_earned, is_poll: data.is_poll })
     }
   }
 

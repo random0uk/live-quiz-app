@@ -139,6 +139,9 @@ export default function ProjectorScreen() {
   // Question
   if (quiz.status === "question" && currentQ) {
     const opts = Array.isArray(currentQ.options) ? currentQ.options : []
+    const type = currentQ.type ?? "multiple_choice"
+    const isPoll = type === "poll"
+    const isTrueFalse = type === "true_false"
     const isUrgent = timeLeft <= 5
     const progress = (timeLeft / currentQ.time_limit) * 100
     return (
@@ -151,37 +154,59 @@ export default function ProjectorScreen() {
         >
           {/* Header row */}
           <div className="flex items-center justify-between">
-            <p className="text-muted-foreground text-sm">
-              Question {quiz.current_question_index + 1} of {questions.length}
-            </p>
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center font-mono font-bold text-xl border-2 transition-colors ${
-              isUrgent ? "border-destructive text-destructive animate-pulse" : "border-primary text-primary"
-            }`}>
-              {timeLeft}
+            <div className="flex items-center gap-3">
+              <p className="text-muted-foreground text-sm">
+                Question {quiz.current_question_index + 1} of {questions.length}
+              </p>
+              {isPoll && (
+                <span className="px-2 py-0.5 bg-secondary text-xs rounded-full text-muted-foreground">Poll</span>
+              )}
             </div>
+            {!isPoll && (
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center font-mono font-bold text-xl border-2 transition-colors ${
+                isUrgent ? "border-destructive text-destructive animate-pulse" : "border-primary text-primary"
+              }`}>
+                {timeLeft}
+              </div>
+            )}
           </div>
 
-          {/* Progress bar */}
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? "bg-destructive" : "bg-primary"}`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {/* Progress bar (not for polls) */}
+          {!isPoll && (
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? "bg-destructive" : "bg-primary"}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
 
           <h2 className="text-3xl font-bold text-center text-balance">{currentQ.question_text}</h2>
 
-          <div className="grid grid-cols-2 gap-4">
-            {opts.map((opt, i) => (
-              <div
-                key={i}
-                className="p-6 bg-card border border-border rounded-xl text-center text-lg font-medium"
-              >
-                <span className="text-primary font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
-                {String(opt)}
-              </div>
-            ))}
-          </div>
+          {/* True / False */}
+          {isTrueFalse && (
+            <div className="grid grid-cols-2 gap-4">
+              {["True", "False"].map((label, i) => (
+                <div key={i} className={`p-8 rounded-xl text-center text-2xl font-bold border-2 ${
+                  i === 0 ? "bg-primary/10 border-primary text-primary" : "bg-destructive/10 border-destructive text-destructive"
+                }`}>
+                  {label}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Multiple choice */}
+          {!isTrueFalse && (
+            <div className={`grid gap-4 ${opts.length <= 2 ? "grid-cols-2" : "grid-cols-2"}`}>
+              {opts.map((opt, i) => (
+                <div key={i} className="p-6 bg-card border border-border rounded-xl text-center text-lg font-medium">
+                  {!isPoll && <span className="text-primary font-bold mr-2">{String.fromCharCode(65 + i)}.</span>}
+                  {String(opt)}
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
     )
@@ -190,32 +215,75 @@ export default function ProjectorScreen() {
   // Answer reveal
   if (quiz.status === "answer_reveal" && currentQ) {
     const opts = Array.isArray(currentQ.options) ? currentQ.options : []
+    const type = currentQ.type ?? "multiple_choice"
+    const isPoll = type === "poll"
+    const isTrueFalse = type === "true_false"
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-full max-w-3xl"
+          className="w-full max-w-3xl space-y-6"
         >
-          <p className="text-muted-foreground text-sm text-center mb-2">Answer</p>
-          <h2 className="text-2xl font-bold text-center mb-8 text-balance">{currentQ.question_text}</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {opts.map((opt, i) => (
-              <motion.div
-                key={i}
-                initial={{ scale: 1 }}
-                animate={{ scale: i === currentQ.correct_index ? 1.05 : 1 }}
-                className={`p-6 rounded-xl text-center text-lg font-medium border-2 transition-colors ${
-                  i === currentQ.correct_index
-                    ? "bg-primary/20 border-primary text-primary"
-                    : "bg-card border-border opacity-50"
-                }`}
-              >
-                <span className="font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
-                {String(opt)}
-              </motion.div>
-            ))}
-          </div>
+          <p className="text-muted-foreground text-sm text-center">{isPoll ? "Poll Results" : "Correct Answer"}</p>
+          <h2 className="text-2xl font-bold text-center text-balance">{currentQ.question_text}</h2>
+
+          {isTrueFalse && (
+            <div className="grid grid-cols-2 gap-4">
+              {["True", "False"].map((label, i) => (
+                <motion.div
+                  key={i}
+                  animate={{ scale: i === currentQ.correct_index ? 1.05 : 1 }}
+                  className={`p-8 rounded-xl text-center text-2xl font-bold border-2 transition-colors ${
+                    i === currentQ.correct_index
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-card border-border opacity-40"
+                  }`}
+                >
+                  {label}
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {!isTrueFalse && !isPoll && (
+            <div className="grid grid-cols-2 gap-4">
+              {opts.map((opt, i) => (
+                <motion.div
+                  key={i}
+                  animate={{ scale: i === currentQ.correct_index ? 1.05 : 1 }}
+                  className={`p-6 rounded-xl text-center text-lg font-medium border-2 transition-colors ${
+                    i === currentQ.correct_index
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-card border-border opacity-40"
+                  }`}
+                >
+                  <span className="font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
+                  {String(opt)}
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {isPoll && (
+            <div className="space-y-3">
+              {opts.map((opt, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>{String(opt)}</span>
+                  </div>
+                  <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "60%" }}
+                      transition={{ delay: i * 0.1, duration: 0.5 }}
+                      className="h-full bg-primary rounded-full"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
     )

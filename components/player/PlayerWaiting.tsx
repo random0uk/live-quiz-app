@@ -4,20 +4,23 @@ import { Check, X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface Props {
-  lastResult: { is_correct: boolean; points_earned: number } | null
+  lastResult: { is_correct: boolean; points_earned: number; is_poll?: boolean } | null
   playerScore: number
 }
 
 export default function PlayerWaiting({ lastResult, playerScore }: Props) {
   if (lastResult) {
+    const isPoll = lastResult.is_poll === true
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-xs animate-scale-in">
           <CardContent className="pt-6 text-center space-y-4">
             <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${
-              lastResult.is_correct ? "bg-primary" : "bg-destructive"
+              isPoll ? "bg-secondary" : lastResult.is_correct ? "bg-primary" : "bg-destructive"
             }`}>
-              {lastResult.is_correct ? (
+              {isPoll ? (
+                <Check className="w-8 h-8 text-foreground" />
+              ) : lastResult.is_correct ? (
                 <Check className="w-8 h-8 text-primary-foreground" />
               ) : (
                 <X className="w-8 h-8 text-destructive-foreground" />
@@ -25,18 +28,23 @@ export default function PlayerWaiting({ lastResult, playerScore }: Props) {
             </div>
 
             <div>
-              <p className={`text-2xl font-bold ${lastResult.is_correct ? "text-primary" : "text-destructive"}`}>
-                {lastResult.is_correct ? "Correct!" : "Wrong"}
+              <p className={`text-2xl font-bold ${isPoll ? "text-foreground" : lastResult.is_correct ? "text-primary" : "text-destructive"}`}>
+                {isPoll ? "Voted!" : lastResult.is_correct ? "Correct!" : "Wrong"}
               </p>
-              {lastResult.is_correct && lastResult.points_earned > 0 && (
+              {!isPoll && lastResult.is_correct && lastResult.points_earned > 0 && (
                 <p className="text-muted-foreground text-sm">+{lastResult.points_earned} points</p>
+              )}
+              {isPoll && (
+                <p className="text-muted-foreground text-sm">No points for polls</p>
               )}
             </div>
 
-            <div className="p-4 bg-secondary rounded-xl">
-              <p className="text-muted-foreground text-xs">Your Score</p>
-              <p className="text-3xl font-bold font-mono">{playerScore}</p>
-            </div>
+            {!isPoll && (
+              <div className="p-4 bg-secondary rounded-xl">
+                <p className="text-muted-foreground text-xs">Your Score</p>
+                <p className="text-3xl font-bold font-mono">{playerScore}</p>
+              </div>
+            )}
 
             <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />

@@ -11,10 +11,9 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
 
-    // Get the correct answer
     const { data: question, error: qError } = await supabase
       .from('questions')
-      .select('correct_index, time_limit')
+      .select('correct_index, time_limit, type')
       .eq('id', question_id)
       .single()
 
@@ -22,11 +21,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 })
     }
 
-    const is_correct = selected_index === question.correct_index
+    const questionType = question.type ?? 'multiple_choice'
+    const isPoll = questionType === 'poll'
+
+    // Polls have no correct answer — everyone gets 0 points
+    const is_correct = isPoll ? false : selected_index === question.correct_index
     const tl = time_limit ?? question.time_limit ?? 20
     const tr = time_remaining ?? 0
-    // Points: up to 1000, scaled by speed
-    const points_earned = is_correct ? Math.max(200, Math.round(1000 * (tr / tl))) : 0
+    const points_earned = isPoll ? 0 : (is_correct ? Math.max(200, Math.round(1000 * (tr / tl))) : 0)
 
     const { data: answer, error: answerError } = await supabase
       .from('answers')
@@ -39,13 +41,12 @@ export async function POST(req: NextRequest) {
 
     if (answerError) return NextResponse.json({ error: answerError.message }, { status: 500 })
 
-    // Update player score
-    if (is_correct) {
+    if (is_correct && points_earned > 0) {
       await supabase.rpc('increment_score', { p_player_id: player_id, p_points: points_earned })
     }
 
-    return NextResponse.json({ answer, is_correct, points_earned })
-  } catch (e) {
+    return NextResponse.json({ answer, is_correct, points_earned, is_poll: isPoll })
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
