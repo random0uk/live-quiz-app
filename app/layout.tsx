@@ -10,11 +10,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Awaneies — Live Multiplayer Quizzes',
   description: 'Host and play live multiplayer quiz games',
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-  },
 }
 
 export default function RootLayout({
@@ -24,8 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased flex flex-col min-h-screen">
-        <div className="flex-1">
+      <body className="font-sans antialiased flex flex-col h-screen overflow-hidden">
+        <div className="flex-1 overflow-hidden">
           {children}
         </div>
         <Footer />
