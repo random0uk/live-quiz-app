@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, ChevronRight, ChevronLeft, Zap, Monitor, Users, Trophy, PuzzleIcon, Gauge, Swords, Target, BarChart3, QrCode } from "lucide-react"
+import { X, ChevronRight, ChevronLeft, Zap, Monitor, Users, PuzzleIcon, Gauge, Swords, Target, BarChart3, QrCode, ToggleLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const SLIDES = [
@@ -58,6 +58,7 @@ const SLIDES = [
       <div className="flex flex-col gap-2 w-full max-w-[260px] mx-auto">
         {[
           { icon: Target, label: "Multiple Choice", sub: "4 options, fast scoring" },
+          { icon: ToggleLeft, label: "True / False", sub: "Quick two-option questions" },
           { icon: BarChart3, label: "Poll", sub: "No right answer, gather opinions" },
           { icon: PuzzleIcon, label: "Puzzle", sub: "Reassemble an image" },
         ].map(({ icon: Icon, label, sub }) => (
