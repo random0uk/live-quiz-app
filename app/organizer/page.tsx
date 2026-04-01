@@ -354,7 +354,12 @@ export default function OrganizerDashboard() {
                 </div>
               </div>
               {logoError && (
-                <p className="text-xs text-destructive mt-1">{logoError}</p>
+                <div className="mt-1 p-2 bg-destructive/10 rounded-lg space-y-1">
+                  <p className="text-xs text-destructive">{logoError}</p>
+                  {logoError.includes("BLOB_READ_WRITE_TOKEN") && (
+                    <p className="text-xs text-muted-foreground">On Railway: go to your service &rarr; Variables and add <code className="bg-secondary px-1 rounded font-mono">BLOB_READ_WRITE_TOKEN</code> from your Vercel Blob store.</p>
+                  )}
+                </div>
               )}
             </div>
 
