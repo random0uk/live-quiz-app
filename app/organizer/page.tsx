@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, Trash2, Play, Copy, ExternalLink, History, ImageIcon, Upload } from "lucide-react"
+import { Plus, Trash2, Play, Copy, ExternalLink, History, ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
+import { useBrandColor, applyBrandColor } from "@/hooks/use-brand-color"
 import type { Question, QuestionType, QuizMode } from "@/lib/types"
 
 interface QuestionForm {
@@ -56,6 +57,10 @@ export default function OrganizerDashboard() {
   const [uploading, setUploading] = useState(false)
   const [appName, setAppName] = useState("Awaneies")
   const [savingName, setSavingName] = useState(false)
+  const [brandColor, setBrandColor] = useState("#7c3aed")
+  const [savingColor, setSavingColor] = useState(false)
+
+  useBrandColor(brandColor)
 
   useEffect(() => {
     if (localStorage.getItem("organizer_auth") !== "true") {
@@ -67,8 +72,9 @@ export default function OrganizerDashboard() {
     const savedTitle = localStorage.getItem("draft_title")
     if (savedTitle) setQuizTitle(savedTitle)
     const supabase = createClient()
-    supabase.from("organizer_settings").select("app_name").eq("id", 1).single().then(({ data }) => {
+    supabase.from("organizer_settings").select("app_name, brand_color").eq("id", 1).single().then(({ data }) => {
       if (data?.app_name) setAppName(data.app_name)
+      if (data?.brand_color) setBrandColor(data.brand_color)
     })
     setLoading(false)
   }, [router])
@@ -78,6 +84,14 @@ export default function OrganizerDashboard() {
     const supabase = createClient()
     await supabase.from("organizer_settings").update({ app_name: appName }).eq("id", 1)
     setSavingName(false)
+  }
+
+  const saveBrandColor = async () => {
+    setSavingColor(true)
+    const supabase = createClient()
+    await supabase.from("organizer_settings").update({ brand_color: brandColor }).eq("id", 1)
+    applyBrandColor(brandColor)
+    setSavingColor(false)
   }
 
   // When type changes, reset options accordingly
@@ -229,20 +243,66 @@ export default function OrganizerDashboard() {
           </div>
         </div>
 
-        {/* App name setting */}
+        {/* App settings: name + brand color */}
         <Card>
-          <CardContent className="pt-4 space-y-2">
-            <Label className="text-xs text-muted-foreground">App Name (shown to players)</Label>
-            <div className="flex gap-2">
-              <Input
-                value={appName}
-                onChange={e => setAppName(e.target.value)}
-                placeholder="App name"
-                className="flex-1"
-              />
-              <Button size="sm" variant="secondary" onClick={saveAppName} disabled={savingName || !appName.trim()}>
-                {savingName ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Save"}
-              </Button>
+          <CardContent className="pt-4 space-y-4">
+            {/* App name */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">App Name (shown to players)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={appName}
+                  onChange={e => setAppName(e.target.value)}
+                  placeholder="App name"
+                  className="flex-1"
+                />
+                <Button size="sm" variant="secondary" onClick={saveAppName} disabled={savingName || !appName.trim()}>
+                  {savingName ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Save"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Brand color */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Brand Color</Label>
+              {/* Preset swatches */}
+              <div className="flex gap-2 flex-wrap">
+                {["#7c3aed","#2563eb","#dc2626","#16a34a","#ea580c","#0891b2","#db2777","#65a30d"].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setBrandColor(color)}
+                    className="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                    style={{
+                      backgroundColor: color,
+                      borderColor: brandColor === color ? "#000" : "transparent",
+                      outline: brandColor === color ? "2px solid #fff" : "none",
+                      outlineOffset: brandColor === color ? "-4px" : "0",
+                    }}
+                    aria-label={color}
+                  />
+                ))}
+                {/* Custom color picker */}
+                <label className="w-8 h-8 rounded-full border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors overflow-hidden relative">
+                  <input
+                    type="color"
+                    value={brandColor}
+                    onChange={e => setBrandColor(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <span className="text-xs text-muted-foreground pointer-events-none">+</span>
+                </label>
+              </div>
+              {/* Preview + save */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 p-2 rounded-lg bg-secondary/50">
+                  <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: brandColor }} />
+                  <span className="font-mono text-xs text-muted-foreground">{brandColor}</span>
+                </div>
+                <Button size="sm" variant="secondary" onClick={saveBrandColor} disabled={savingColor}>
+                  {savingColor ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Apply"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

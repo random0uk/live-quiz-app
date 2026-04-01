@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import FeaturesSheet from "@/components/FeaturesSheet"
+import { applyBrandColor } from "@/hooks/use-brand-color"
 
 export default function Home() {
   const router = useRouter()
@@ -20,11 +21,12 @@ export default function Home() {
     const supabase = createClient()
     supabase
       .from("organizer_settings")
-      .select("app_name")
+      .select("app_name, brand_color")
       .eq("id", 1)
       .single()
       .then(({ data }) => {
         if (data?.app_name) setAppName(data.app_name)
+        if (data?.brand_color) applyBrandColor(data.brand_color)
       })
   }, [])
 
