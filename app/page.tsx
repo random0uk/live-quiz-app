@@ -50,7 +50,7 @@ export default function Home() {
   // Organizer login view
   if (view === "organizer") {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="h-full flex flex-col bg-background">
         <div className="p-4">
           <button
             onClick={() => { setView("home" as const); setError(""); setPin("") }}
@@ -101,7 +101,7 @@ export default function Home() {
 
   // Home view — icon top, buttons bottom
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background">
       {/* Top spacer + branding */}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="text-center space-y-4">
@@ -116,7 +116,7 @@ export default function Home() {
       </div>
 
       {/* Bottom actions — pushed to bottom like a real app */}
-      <div className="p-6 pb-12 space-y-3 w-full max-w-xs mx-auto">
+      <div className="p-6 pb-6 space-y-3 w-full max-w-xs mx-auto">
         <Button
           onClick={() => setFeaturesOpen(true)}
           className="w-full h-14 text-base font-semibold rounded-2xl"

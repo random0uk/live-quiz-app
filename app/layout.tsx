@@ -24,8 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased flex flex-col min-h-screen">
-        <div className="flex-1">
+      <body className="font-sans antialiased flex flex-col h-screen overflow-hidden">
+        <div className="flex-1 overflow-hidden">
           {children}
         </div>
         <Footer />
