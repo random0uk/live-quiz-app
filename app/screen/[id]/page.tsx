@@ -277,6 +277,7 @@ export default function ProjectorScreen() {
     const type = currentQ.type ?? "multiple_choice"
     const isPoll = type === "poll"
     const isTrueFalse = type === "true_false"
+    const isPuzzle = type === "puzzle"
     const isUrgent = timeLeft <= 5
     const progress = (timeLeft / currentQ.time_limit) * 100
     return (
@@ -318,6 +319,24 @@ export default function ProjectorScreen() {
 
           <h2 className="text-3xl font-bold text-center text-balance">{currentQ.question_text}</h2>
 
+          {/* Puzzle — show the full image as a teaser */}
+          {isPuzzle && currentQ.image_url && (
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative w-72 h-72 mx-auto">
+                <img
+                  src={currentQ.image_url}
+                  alt="Puzzle image"
+                  className="w-full h-full object-cover rounded-2xl shadow-xl"
+                  crossOrigin="anonymous"
+                />
+                <div className="absolute inset-0 bg-black/30 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                  <p className="text-white font-bold text-2xl tracking-wide">Reassemble this!</p>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-sm">{players.length} players are solving the puzzle on their phones</p>
+            </div>
+          )}
+
           {/* True / False */}
           {isTrueFalse && (
             <div className="grid grid-cols-2 gap-4">
@@ -350,6 +369,40 @@ export default function ProjectorScreen() {
   // Answer reveal
   if (quiz.status === "answer_reveal") {
     if (!currentQ) return spinner
+
+    // Puzzle reveal — show completed image + top solvers
+    if (currentQ.type === "puzzle" && currentQ.image_url) {
+      const sorted = [...players].sort((a, b) => b.score - a.score).slice(0, 5)
+      return (
+        <div className="min-h-screen flex items-center justify-center p-8">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-12 items-center w-full max-w-4xl">
+            <div className="flex-1 flex flex-col items-center gap-4">
+              <p className="text-muted-foreground text-sm uppercase tracking-widest">Puzzle Solved</p>
+              <img src={currentQ.image_url} alt="Completed puzzle" className="w-72 h-72 object-cover rounded-2xl shadow-2xl" crossOrigin="anonymous" />
+            </div>
+            <div className="flex-1 space-y-3">
+              <h3 className="text-xl font-bold mb-4">Top Solvers</h3>
+              {sorted.map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className={`flex items-center justify-between p-4 rounded-xl ${i === 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-primary-foreground/20" : "bg-secondary"}`}>{i + 1}</span>
+                    <span className="font-medium">{p.name}</span>
+                  </div>
+                  <span className="font-mono font-bold">{p.score} pts</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )
+    }
+
     const opts = Array.isArray(currentQ.options) ? currentQ.options : []
     const type = currentQ.type ?? "multiple_choice"
     const isPoll = type === "poll"

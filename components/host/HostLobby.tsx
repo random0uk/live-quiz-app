@@ -1,7 +1,8 @@
 "use client"
 
+import React from "react"
 import { Quiz, Player, Question } from "@/lib/types"
-import { Users, Play, HelpCircle, ToggleLeft, BarChart3, Zap, Target, Skull, UsersRound } from "lucide-react"
+import { Users, Play, HelpCircle, ToggleLeft, BarChart3, Zap, Target, Skull, UsersRound, PuzzleIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -13,16 +14,18 @@ interface Props {
   controlling?: boolean
 }
 
-const TYPE_ICONS = {
+const TYPE_ICONS: Record<string, React.ElementType> = {
   multiple_choice: HelpCircle,
   true_false: ToggleLeft,
   poll: BarChart3,
+  puzzle: PuzzleIcon,
 }
 
-const TYPE_LABELS = {
+const TYPE_LABELS: Record<string, string> = {
   multiple_choice: "Multiple Choice",
   true_false: "True / False",
   poll: "Poll",
+  puzzle: "Puzzle",
 }
 
 const MODE_INFO = {

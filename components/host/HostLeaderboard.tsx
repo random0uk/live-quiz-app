@@ -1,7 +1,8 @@
 "use client"
 
+import React from "react"
 import { Player, Question } from "@/lib/types"
-import { ChevronRight, HelpCircle, ToggleLeft, BarChart3 } from "lucide-react"
+import { ChevronRight, HelpCircle, ToggleLeft, BarChart3, PuzzleIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -14,16 +15,18 @@ interface Props {
   controlling?: boolean
 }
 
-const TYPE_ICONS = {
+const TYPE_ICONS: Record<string, React.ElementType> = {
   multiple_choice: HelpCircle,
   true_false: ToggleLeft,
   poll: BarChart3,
+  puzzle: PuzzleIcon,
 }
 
-const TYPE_LABELS = {
+const TYPE_LABELS: Record<string, string> = {
   multiple_choice: "Multiple Choice",
   true_false: "True / False",
   poll: "Poll",
+  puzzle: "Puzzle",
 }
 
 export default function HostLeaderboard({ players, questionNumber, totalQuestions, nextQuestion, onNext, controlling }: Props) {

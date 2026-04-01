@@ -22,7 +22,7 @@ export interface OrganizerSettings {
   updated_at: string
 }
 
-export type QuestionType = 'multiple_choice' | 'true_false' | 'poll'
+export type QuestionType = 'multiple_choice' | 'true_false' | 'poll' | 'puzzle'
 
 export interface Question {
   id: string
@@ -33,6 +33,7 @@ export interface Question {
   time_limit: number
   position: number
   type: QuestionType
+  image_url?: string
 }
 
 export interface Player {

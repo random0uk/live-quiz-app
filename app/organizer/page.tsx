@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, Trash2, Play, Copy, ExternalLink, History } from "lucide-react"
+import { Plus, Trash2, Play, Copy, ExternalLink, History, ImageIcon, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,12 +17,14 @@ interface QuestionForm {
   options: string[]
   correct_index: number
   time_limit: number
+  image_url?: string
 }
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   multiple_choice: "Multiple Choice",
   true_false: "True / False",
   poll: "Poll",
+  puzzle: "Puzzle",
 }
 
 const MODE_INFO: Record<QuizMode, { label: string; desc: string }> = {
@@ -51,6 +53,7 @@ export default function OrganizerDashboard() {
   const [createdQuizId, setCreatedQuizId] = useState<string | null>(null)
   const [createdCode, setCreatedCode] = useState<string | null>(null)
   const [form, setForm] = useState<QuestionForm>(DEFAULT_FORM)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem("organizer_auth") !== "true") {
@@ -69,16 +72,27 @@ export default function OrganizerDashboard() {
     const options =
       type === "true_false"
         ? ["True", "False"]
-        : type === "poll"
-        ? ["", "", "", ""]
+        : type === "puzzle"
+        ? []
         : ["", "", "", ""]
-    setForm(f => ({ ...f, type, options, correct_index: 0 }))
+    setForm(f => ({ ...f, type, options, correct_index: 0, image_url: type === "puzzle" ? f.image_url : undefined }))
+  }
+
+  const uploadImage = async (file: File) => {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append("file", file)
+    const res = await fetch("/api/upload", { method: "POST", body: fd })
+    const data = await res.json()
+    if (data.url) setForm(f => ({ ...f, image_url: data.url }))
+    setUploading(false)
   }
 
   const addQuestion = () => {
-    const { question_text, type, options, correct_index, time_limit } = form
+    const { question_text, type, options, correct_index, time_limit, image_url } = form
     if (!question_text.trim()) return
-    if (type !== "poll" && options.some(o => !o.trim())) return
+    if (type === "puzzle" && !image_url) return
+    if (type !== "poll" && type !== "puzzle" && options.some(o => !o.trim())) return
     if (type === "poll" && options.filter(o => o.trim()).length < 2) return
 
     const newQ: Question = {
@@ -86,10 +100,11 @@ export default function OrganizerDashboard() {
       quiz_id: "",
       question_text,
       type,
-      options: type === "true_false" ? ["True", "False"] : options.filter(o => o.trim()),
+      options: type === "true_false" ? ["True", "False"] : type === "puzzle" ? [] : options.filter(o => o.trim()),
       correct_index,
       time_limit,
       position: questions.length,
+      image_url: type === "puzzle" ? image_url : undefined,
     }
     const updated = [...questions, newQ]
     setQuestions(updated)
@@ -123,10 +138,11 @@ export default function OrganizerDashboard() {
         quiz_id: quizData.id,
         question_text: q.question_text,
         type: q.type ?? "multiple_choice",
-        options: q.type === "true_false" ? ["True", "False"] : q.options,
+        options: q.type === "true_false" ? ["True", "False"] : q.type === "puzzle" ? [] : q.options,
         correct_index: q.correct_index ?? 0,
-        time_limit: q.time_limit ?? 20,
+        time_limit: q.time_limit ?? 60,
         position: i,
+        image_url: q.image_url ?? null,
       }))
     )
 
@@ -251,7 +267,7 @@ export default function OrganizerDashboard() {
           <CardContent className="space-y-3">
             {/* Question type tabs */}
             <div className="flex gap-1 p-1 bg-secondary rounded-lg">
-              {(["multiple_choice", "true_false", "poll"] as QuestionType[]).map(t => (
+              {(["multiple_choice", "true_false", "poll", "puzzle"] as QuestionType[]).map(t => (
                 <button
                   key={t}
                   onClick={() => setType(t)}
@@ -259,7 +275,7 @@ export default function OrganizerDashboard() {
                     form.type === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {t === "multiple_choice" ? "Choice" : t === "true_false" ? "T/F" : "Poll"}
+                  {t === "multiple_choice" ? "Choice" : t === "true_false" ? "T/F" : t === "poll" ? "Poll" : "Puzzle"}
                 </button>
               ))}
             </div>
@@ -338,6 +354,39 @@ export default function OrganizerDashboard() {
               </div>
             )}
 
+            {form.type === "puzzle" && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">Upload the image players will reassemble as a 3x3 puzzle</p>
+                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 cursor-pointer transition-colors ${
+                  form.image_url ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                }`}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f) }}
+                  />
+                  {form.image_url ? (
+                    <div className="space-y-2 text-center">
+                      <img src={form.image_url} alt="puzzle preview" className="w-full max-w-[160px] rounded-lg mx-auto aspect-square object-cover" />
+                      <p className="text-xs text-primary font-medium">Image uploaded — tap to change</p>
+                    </div>
+                  ) : uploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <p className="text-xs text-muted-foreground">Uploading...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <ImageIcon className="w-8 h-8" />
+                      <p className="text-sm font-medium">Tap to upload image</p>
+                      <p className="text-xs">JPG, PNG — max 5MB</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <select
                 value={form.time_limit}
@@ -353,6 +402,7 @@ export default function OrganizerDashboard() {
                 onClick={addQuestion}
                 disabled={
                   !form.question_text.trim() ||
+                  (form.type === "puzzle" && !form.image_url) ||
                   (form.type === "multiple_choice" && form.options.some(o => !o.trim())) ||
                   (form.type === "poll" && form.options.filter(o => o.trim()).length < 2)
                 }

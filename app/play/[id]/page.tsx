@@ -10,6 +10,7 @@ import PlayerWaiting from "@/components/player/PlayerWaiting"
 import PlayerLeaderboard from "@/components/player/PlayerLeaderboard"
 import PlayerFinished from "@/components/player/PlayerFinished"
 import PlayerEliminated from "@/components/player/PlayerEliminated"
+import PlayerPuzzle from "@/components/player/PlayerPuzzle"
 
 export default function PlayPage() {
   const { id } = useParams<{ id: string }>()
@@ -144,6 +145,39 @@ export default function PlayPage() {
 
   if (quiz.status === "question") {
     if (!currentQuestion) return spinner
+
+    // Puzzle type gets its own component
+    if (currentQuestion.type === "puzzle") {
+      if (hasAnswered) {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <span className="text-3xl">🧩</span>
+            </div>
+            <h2 className="text-xl font-bold">Puzzle solved!</h2>
+            <p className="text-muted-foreground text-sm">Waiting for others to finish...</p>
+          </div>
+        )
+      }
+      return (
+        <PlayerPuzzle
+          question={currentQuestion}
+          quizId={quiz.id}
+          playerId={player.id}
+          onComplete={async (timeMs) => {
+            setAnswered(prev => ({ ...prev, [currentQuestion.id]: true }))
+            const res = await fetch("/api/quiz/puzzle-complete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ quiz_id: quiz.id, question_id: currentQuestion.id, player_id: player.id, completion_time_ms: timeMs }),
+            })
+            const data = await res.json()
+            if (res.ok) setLastResult({ is_correct: true, points_earned: data.points_earned })
+          }}
+        />
+      )
+    }
+
     return (
       <PlayerQuestion
         question={currentQuestion}
