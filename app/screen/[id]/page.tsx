@@ -117,6 +117,12 @@ export default function ProjectorScreen() {
   const currentQ = questions[quiz.current_question_index]
   const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/join?code=${quiz.game_code}` : ""
 
+  const spinner = (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
   // Lobby - show QR and join code
   if (quiz.status === "lobby") {
     return (
@@ -162,7 +168,8 @@ export default function ProjectorScreen() {
   }
 
   // Question
-  if (quiz.status === "question" && currentQ) {
+  if (quiz.status === "question") {
+    if (!currentQ) return spinner
     const opts = Array.isArray(currentQ.options) ? currentQ.options : []
     const type = currentQ.type ?? "multiple_choice"
     const isPoll = type === "poll"
@@ -238,7 +245,8 @@ export default function ProjectorScreen() {
   }
 
   // Answer reveal
-  if (quiz.status === "answer_reveal" && currentQ) {
+  if (quiz.status === "answer_reveal") {
+    if (!currentQ) return spinner
     const opts = Array.isArray(currentQ.options) ? currentQ.options : []
     const type = currentQ.type ?? "multiple_choice"
     const isPoll = type === "poll"
@@ -342,5 +350,5 @@ export default function ProjectorScreen() {
     )
   }
 
-  return null
+  return spinner
 }

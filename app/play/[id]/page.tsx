@@ -123,11 +123,18 @@ export default function PlayPage() {
   const currentQuestion = questions[quiz.current_question_index]
   const hasAnswered = currentQuestion ? !!answered[currentQuestion.id] : false
 
+  const spinner = (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
   if (quiz.status === "lobby") {
     return <PlayerLobby quiz={quiz} player={player} />
   }
 
-  if (quiz.status === "question" && currentQuestion) {
+  if (quiz.status === "question") {
+    if (!currentQuestion) return spinner
     return (
       <PlayerQuestion
         question={currentQuestion}
@@ -151,5 +158,5 @@ export default function PlayPage() {
     return <PlayerFinished players={players} currentPlayerId={player.id} />
   }
 
-  return null
+  return spinner
 }

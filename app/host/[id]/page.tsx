@@ -104,11 +104,19 @@ export default function HostGamePage() {
 
   const currentQuestion = questions[quiz.current_question_index]
 
+  // Spinner fallback — shown during transitions when questions haven't loaded yet
+  const spinner = (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
   if (quiz.status === "lobby") {
     return <HostLobby quiz={quiz} players={players} onStart={() => control("start")} controlling={controlling} />
   }
 
-  if (quiz.status === "question" && currentQuestion) {
+  if (quiz.status === "question") {
+    if (!currentQuestion) return spinner
     return (
       <HostQuestion
         question={currentQuestion}
@@ -122,7 +130,8 @@ export default function HostGamePage() {
     )
   }
 
-  if (quiz.status === "answer_reveal" && currentQuestion) {
+  if (quiz.status === "answer_reveal") {
+    if (!currentQuestion) return spinner
     return (
       <HostReveal
         question={currentQuestion}
@@ -152,5 +161,5 @@ export default function HostGamePage() {
     return <HostFinished players={players} />
   }
 
-  return null
+  return spinner
 }
