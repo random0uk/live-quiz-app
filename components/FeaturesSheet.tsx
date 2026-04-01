@@ -148,9 +148,10 @@ const SLIDES = [
 interface FeaturesSheetProps {
   open: boolean
   onClose: () => void
+  organizerName?: string
 }
 
-export default function FeaturesSheet({ open, onClose }: FeaturesSheetProps) {
+export default function FeaturesSheet({ open, onClose, organizerName = "Organizer" }: FeaturesSheetProps) {
   const [slide, setSlide] = useState(0)
   const [dir, setDir] = useState(1)
 
@@ -220,6 +221,18 @@ export default function FeaturesSheet({ open, onClose }: FeaturesSheetProps) {
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="flex flex-col items-center justify-center gap-4 h-full"
                 >
+                  {/* Greeting — only on first slide */}
+                  {slide === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center space-y-0.5"
+                    >
+                      <p className="text-lg font-bold">Hello, {organizerName}!</p>
+                      <p className="text-xs text-muted-foreground">Here you&apos;ll see how it works — have fun!</p>
+                    </motion.div>
+                  )}
+
                   {/* Tag */}
                   <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full uppercase tracking-wider">
                     {SLIDES[slide].tag}
