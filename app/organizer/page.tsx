@@ -57,6 +57,8 @@ export default function OrganizerDashboard() {
   const [uploading, setUploading] = useState(false)
   const [appName, setAppName] = useState("Awaneies")
   const [savingName, setSavingName] = useState(false)
+  const [organizerName, setOrganizerName] = useState("")
+  const [savingOrgName, setSavingOrgName] = useState(false)
   const [brandColor, setBrandColor] = useState("#7c3aed")
   const [savingColor, setSavingColor] = useState(false)
 
@@ -72,9 +74,10 @@ export default function OrganizerDashboard() {
     const savedTitle = localStorage.getItem("draft_title")
     if (savedTitle) setQuizTitle(savedTitle)
     const supabase = createClient()
-    supabase.from("organizer_settings").select("app_name, brand_color").eq("id", 1).single().then(({ data }) => {
+    supabase.from("organizer_settings").select("app_name, brand_color, organizer_name").eq("id", 1).single().then(({ data }) => {
       if (data?.app_name) setAppName(data.app_name)
       if (data?.brand_color) setBrandColor(data.brand_color)
+      if (data?.organizer_name) setOrganizerName(data.organizer_name)
     })
     setLoading(false)
   }, [router])
@@ -84,6 +87,13 @@ export default function OrganizerDashboard() {
     const supabase = createClient()
     await supabase.from("organizer_settings").update({ app_name: appName }).eq("id", 1)
     setSavingName(false)
+  }
+
+  const saveOrganizerName = async () => {
+    setSavingOrgName(true)
+    const supabase = createClient()
+    await supabase.from("organizer_settings").update({ organizer_name: organizerName }).eq("id", 1)
+    setSavingOrgName(false)
   }
 
   const saveBrandColor = async () => {
@@ -258,6 +268,22 @@ export default function OrganizerDashboard() {
                 />
                 <Button size="sm" variant="secondary" onClick={saveAppName} disabled={savingName || !appName.trim()}>
                   {savingName ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Save"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Organizer name */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Your Name (shown in welcome greeting)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={organizerName}
+                  onChange={e => setOrganizerName(e.target.value)}
+                  placeholder="e.g. Merry"
+                  className="flex-1"
+                />
+                <Button size="sm" variant="secondary" onClick={saveOrganizerName} disabled={savingOrgName || !organizerName.trim()}>
+                  {savingOrgName ? <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" /> : "Save"}
                 </Button>
               </div>
             </div>

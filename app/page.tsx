@@ -15,18 +15,20 @@ export default function Home() {
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
   const [appName, setAppName] = useState("Awaneies")
+  const [organizerName, setOrganizerName] = useState("Organizer")
   const [featuresOpen, setFeaturesOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
     supabase
       .from("organizer_settings")
-      .select("app_name, brand_color")
+      .select("app_name, brand_color, organizer_name")
       .eq("id", 1)
       .single()
       .then(({ data }) => {
         if (data?.app_name) setAppName(data.app_name)
         if (data?.brand_color) applyBrandColor(data.brand_color)
+        if (data?.organizer_name) setOrganizerName(data.organizer_name)
       })
   }, [])
 
@@ -136,7 +138,7 @@ export default function Home() {
         </Button>
       </div>
 
-      <FeaturesSheet open={featuresOpen} onClose={() => setFeaturesOpen(false)} />
+      <FeaturesSheet open={featuresOpen} onClose={() => setFeaturesOpen(false)} organizerName={organizerName} />
     </div>
   )
 }
