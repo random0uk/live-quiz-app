@@ -21,17 +21,23 @@ export default function HostReveal({
   const opts = Array.isArray(question.options) ? question.options : []
   const type = question.type ?? "multiple_choice"
   const isPoll = type === "poll"
-  const correctCount = answers.filter(a => a.is_correct).length
+  const isTrueFalse = type === "true_false"
   const totalAnswers = answers.length
+  const correctCount = answers.filter(a => a.is_correct).length
 
-  // Vote counts per option for poll
-  const voteCounts = opts.map((_, i) => answers.filter(a => a.selected_index === i).length)
-  const maxVotes = Math.max(...voteCounts, 1)
+  const displayOpts = isTrueFalse ? ["True", "False"] : opts.map(String)
+
+  // Per-option counts and percentages
+  const optionCounts = displayOpts.map((_, i) => answers.filter(a => a.selected_index === i).length)
+  const getPercent = (count: number) =>
+    totalAnswers === 0 ? 0 : Math.round((count / totalAnswers) * 100)
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-sm animate-fade-in">
         <CardContent className="pt-6 space-y-4">
+
+          {/* Header */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Q{questionNumber}/{totalQuestions}</span>
             <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
@@ -39,68 +45,56 @@ export default function HostReveal({
             </span>
           </div>
 
-          <p className="text-sm text-center text-muted-foreground text-balance">
-            {question.question_text}
-          </p>
+          <p className="text-sm text-center font-medium text-balance">{question.question_text}</p>
 
-          {isPoll ? (
-            /* Poll: show vote bar chart */
-            <div className="space-y-2">
-              {opts.map((opt, i) => {
-                const count = voteCounts[i]
-                const pct = Math.round((count / maxVotes) * 100)
-                return (
-                  <div key={i} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium truncate">{String(opt)}</span>
-                      <span className="text-muted-foreground ml-2 shrink-0">{count} vote{count !== 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+          {/* Per-option bars for every type */}
+          <div className="space-y-2">
+            {displayOpts.map((label, i) => {
+              const count = optionCounts[i]
+              const pct = getPercent(count)
+              const isCorrect = !isPoll && i === question.correct_index
+              return (
+                <div key={i}>
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className={`font-medium flex items-center gap-1 ${isCorrect ? "text-primary" : "text-foreground"}`}>
+                      {isCorrect && <Check className="w-3 h-3" />}
+                      {!isPoll && !isTrueFalse && <span className="text-muted-foreground">{String.fromCharCode(65 + i)}. </span>}
+                      {label}
+                    </span>
+                    <span className="text-muted-foreground font-mono">{pct}% <span className="text-muted-foreground/60">({count})</span></span>
                   </div>
-                )
-              })}
-              <p className="text-xs text-muted-foreground text-center pt-1">{totalAnswers} of {players.length} voted</p>
+                  <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        isPoll ? "bg-primary" : isCorrect ? "bg-primary" : "bg-destructive/50"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Summary row */}
+          {!isPoll && (
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="p-2 bg-secondary rounded-lg">
+                <p className="font-bold text-primary">{correctCount}</p>
+                <p className="text-muted-foreground">Correct</p>
+              </div>
+              <div className="p-2 bg-secondary rounded-lg">
+                <p className="font-bold text-destructive">{totalAnswers - correctCount}</p>
+                <p className="text-muted-foreground">Wrong</p>
+              </div>
+              <div className="p-2 bg-secondary rounded-lg">
+                <p className="font-bold text-muted-foreground">{players.length - totalAnswers}</p>
+                <p className="text-muted-foreground">No reply</p>
+              </div>
             </div>
-          ) : (
-            /* Multiple choice / True-False: show correct answer + stats */
-            <>
-              <div className="p-4 bg-primary/10 border-2 border-primary rounded-xl">
-                <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-primary shrink-0" />
-                  <span className="font-semibold text-primary text-sm">
-                    {type === "true_false"
-                      ? (question.correct_index === 0 ? "True" : "False")
-                      : `${String.fromCharCode(65 + question.correct_index)}. ${String(opts[question.correct_index])}`
-                    }
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-3 bg-secondary rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-primary">
-                    <Check className="w-4 h-4" />
-                    <span className="font-bold">{correctCount}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Correct</p>
-                </div>
-                <div className="p-3 bg-secondary rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-destructive">
-                    <X className="w-4 h-4" />
-                    <span className="font-bold">{totalAnswers - correctCount}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Wrong</p>
-                </div>
-                <div className="p-3 bg-secondary rounded-lg">
-                  <span className="font-bold text-muted-foreground">{players.length - totalAnswers}</span>
-                  <p className="text-xs text-muted-foreground">No Answer</p>
-                </div>
-              </div>
-            </>
+          )}
+          {isPoll && (
+            <p className="text-xs text-muted-foreground text-center">{totalAnswers} of {players.length} voted</p>
           )}
 
           <Button onClick={onLeaderboard} disabled={controlling} className="w-full">
@@ -112,6 +106,7 @@ export default function HostReveal({
               <><Trophy className="w-4 h-4 mr-2" />Leaderboard</>
             )}
           </Button>
+
         </CardContent>
       </Card>
     </div>

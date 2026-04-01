@@ -12,6 +12,7 @@ export default function ProjectorScreen() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [players, setPlayers] = useState<Player[]>([])
+  const [answers, setAnswers] = useState<{ selected_index: number; is_correct: boolean; question_id: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -61,11 +62,35 @@ export default function ProjectorScreen() {
     const channel = supabase
       .channel(`screen-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "quizzes", filter: `id=eq.${id}` }, (payload) => {
-        if (payload.new) setQuiz(payload.new as Quiz)
+        if (payload.new) {
+          const newQuiz = payload.new as Quiz
+          setQuiz(newQuiz)
+          // Fetch answers when moving to reveal
+          if (newQuiz.status === "answer_reveal") {
+            supabase.from("questions").select("id").eq("quiz_id", id).order("position").then(({ data: qs }) => {
+              if (!qs) return
+              const currentQ = qs[newQuiz.current_question_index]
+              if (currentQ) {
+                supabase.from("answers").select("selected_index, is_correct, question_id")
+                  .eq("question_id", currentQ.id)
+                  .then(({ data: ans }) => { if (ans) setAnswers(ans) })
+              }
+            })
+          }
+        }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "players", filter: `quiz_id=eq.${id}` }, () => {
         supabase.from("players").select("*").eq("quiz_id", id).order("score", { ascending: false }).then(({ data }) => {
           if (data) setPlayers(data)
+        })
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "answers", filter: `quiz_id=eq.${id}` }, (payload) => {
+        setAnswers(prev => {
+          const exists = prev.find((a: { question_id: string; selected_index: number }) =>
+            a.question_id === (payload.new as { question_id: string }).question_id &&
+            (payload.new as { selected_index: number }).selected_index === a.selected_index
+          )
+          return exists ? prev : [...prev, payload.new as { selected_index: number; is_correct: boolean; question_id: string }]
         })
       })
       .subscribe()
@@ -218,6 +243,12 @@ export default function ProjectorScreen() {
     const type = currentQ.type ?? "multiple_choice"
     const isPoll = type === "poll"
     const isTrueFalse = type === "true_false"
+    const displayOpts = isTrueFalse ? ["True", "False"] : opts.map(String)
+    const currentAnswers = answers.filter(a => a.question_id === currentQ.id)
+    const totalAnswers = currentAnswers.length
+    const getCount = (i: number) => currentAnswers.filter(a => a.selected_index === i).length
+    const getPct = (i: number) => totalAnswers === 0 ? 0 : Math.round((getCount(i) / totalAnswers) * 100)
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8">
         <motion.div
@@ -228,62 +259,43 @@ export default function ProjectorScreen() {
           <p className="text-muted-foreground text-sm text-center">{isPoll ? "Poll Results" : "Correct Answer"}</p>
           <h2 className="text-2xl font-bold text-center text-balance">{currentQ.question_text}</h2>
 
-          {isTrueFalse && (
-            <div className="grid grid-cols-2 gap-4">
-              {["True", "False"].map((label, i) => (
+          {/* Per-option percentage bars */}
+          <div className="space-y-3">
+            {displayOpts.map((label, i) => {
+              const pct = getPct(i)
+              const count = getCount(i)
+              const isCorrect = !isPoll && i === currentQ.correct_index
+              return (
                 <motion.div
                   key={i}
-                  animate={{ scale: i === currentQ.correct_index ? 1.05 : 1 }}
-                  className={`p-8 rounded-xl text-center text-2xl font-bold border-2 transition-colors ${
-                    i === currentQ.correct_index
-                      ? "bg-primary/20 border-primary text-primary"
-                      : "bg-card border-border opacity-40"
-                  }`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.08 }}
                 >
-                  {label}
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {!isTrueFalse && !isPoll && (
-            <div className="grid grid-cols-2 gap-4">
-              {opts.map((opt, i) => (
-                <motion.div
-                  key={i}
-                  animate={{ scale: i === currentQ.correct_index ? 1.05 : 1 }}
-                  className={`p-6 rounded-xl text-center text-lg font-medium border-2 transition-colors ${
-                    i === currentQ.correct_index
-                      ? "bg-primary/20 border-primary text-primary"
-                      : "bg-card border-border opacity-40"
-                  }`}
-                >
-                  <span className="font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
-                  {String(opt)}
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {isPoll && (
-            <div className="space-y-3">
-              {opts.map((opt, i) => (
-                <div key={i} className="space-y-1">
-                  <div className="flex justify-between text-sm font-medium">
-                    <span>{String(opt)}</span>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className={`text-lg font-semibold flex items-center gap-2 ${isCorrect ? "text-primary" : ""}`}>
+                      {isCorrect && <span className="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-white text-xs">✓</span>}
+                      {!isPoll && !isTrueFalse && <span className="text-muted-foreground text-base">{String.fromCharCode(65 + i)}.</span>}
+                      {label}
+                    </span>
+                    <span className="font-mono font-bold text-lg">{pct}%
+                      <span className="text-muted-foreground text-sm ml-1">({count})</span>
+                    </span>
                   </div>
-                  <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-4 bg-secondary rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: "60%" }}
-                      transition={{ delay: i * 0.1, duration: 0.5 }}
-                      className="h-full bg-primary rounded-full"
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.6, delay: i * 0.08 + 0.1 }}
+                      className={`h-full rounded-full ${isPoll ? "bg-primary" : isCorrect ? "bg-primary" : "bg-destructive/50"}`}
                     />
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                </motion.div>
+              )
+            })}
+          </div>
+
+          <p className="text-center text-muted-foreground text-sm">{totalAnswers} of {players.length} answered</p>
         </motion.div>
       </div>
     )
