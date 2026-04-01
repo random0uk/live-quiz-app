@@ -212,7 +212,7 @@ export default function ProjectorScreen() {
               >
                 Are you ready?
               </motion.p>
-              <h1 className="text-6xl font-black tracking-tight text-balance">{quiz.title}</h1>
+              <h1 className="text-5xl font-black tracking-tight text-balance">Scan the QR code to start the quiz</h1>
             </motion.div>
 
             {/* QR Code */}
@@ -234,12 +234,12 @@ export default function ProjectorScreen() {
 
             {/* Code */}
             <div className="text-center space-y-1">
-              <p className="text-muted-foreground text-xs uppercase tracking-widest">Scan to join or enter code at</p>
-              <p className="text-muted-foreground text-sm font-mono">{typeof window !== "undefined" ? window.location.origin : ""}</p>
+
+
               <motion.p
                 animate={{ scale: [1, 1.025, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="text-7xl font-mono font-black tracking-[0.25em] text-primary"
+                className="text-4xl font-mono font-bold tracking-widest text-primary"
               >
                 {quiz.game_code}
               </motion.p>

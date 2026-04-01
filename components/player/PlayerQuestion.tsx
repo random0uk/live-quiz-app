@@ -89,7 +89,6 @@ export default function PlayerQuestion({ question, questionNumber, totalQuestion
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <OrganizerLogo />
 
       {/* Header: question + timer */}
       <div className={`pt-12 pb-6 px-5 flex flex-col gap-3 transition-colors duration-700 ${isUrgent ? "bg-destructive" : "bg-primary"}`}>
