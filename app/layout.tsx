@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import Footer from '@/components/Footer'
+import OrganizerLogo from '@/components/OrganizerLogo'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased flex flex-col min-h-screen">
+        <OrganizerLogo />
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>
