@@ -103,28 +103,28 @@ export default function Home() {
     )
   }
 
-  // Home view — half-circle hero top, buttons bottom
+  // Home view — half-circle hero top, buttons bottom, no scroll
   return (
-    <div className="min-h-screen flex flex-col bg-background overflow-hidden">
-      {/* Half-circle hero at the top */}
-      <div className="relative w-full flex flex-col items-center" style={{ paddingBottom: "2.5rem" }}>
-        {/* The half-circle: oversized ellipse clipped to only show the bottom half */}
+    <div className="h-screen flex flex-col bg-background overflow-hidden" suppressHydrationWarning>
+      {/* Half-circle hero — takes ~55% of screen height */}
+      <div className="relative flex flex-col items-center" style={{ height: "55%" }}>
+        {/* Oversized ellipse, only bottom portion visible */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 bg-primary rounded-b-[50%]"
-          style={{ width: "140%", height: "320px" }}
+          style={{ width: "150%", height: "100%" }}
           aria-hidden="true"
         />
-        {/* Branding on top of the circle */}
-        <div className="relative z-10 flex flex-col items-center pt-16 pb-8 px-6 text-center">
-          <div className="w-24 h-24 mx-auto rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl shadow-black/20 mb-5">
-            <Zap className="w-12 h-12 text-white" />
+        {/* Branding centered inside the circle */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 text-center gap-4">
+          <Zap className="w-14 h-14 text-white" />
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-white">{appName}</h1>
+            <p className="text-white/75 text-sm mt-1">Live multiplayer quizzes</p>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">{appName}</h1>
-          <p className="text-white/75 text-sm mt-1">Live multiplayer quizzes</p>
         </div>
       </div>
 
-      {/* Spacer to push buttons down */}
+      {/* Spacer */}
       <div className="flex-1" />
 
       {/* Bottom actions */}
