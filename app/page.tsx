@@ -103,24 +103,32 @@ export default function Home() {
     )
   }
 
-  // Home view — icon top, buttons bottom
+  // Home view — half-circle hero top, buttons bottom
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Top spacer + branding */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-4">
-          <div className="w-24 h-24 mx-auto rounded-3xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30">
-            <Zap className="w-12 h-12 text-primary-foreground" />
+    <div className="min-h-screen flex flex-col bg-background overflow-hidden">
+      {/* Half-circle hero at the top */}
+      <div className="relative w-full flex flex-col items-center" style={{ paddingBottom: "2.5rem" }}>
+        {/* The half-circle: oversized ellipse clipped to only show the bottom half */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 bg-primary rounded-b-[50%]"
+          style={{ width: "140%", height: "320px" }}
+          aria-hidden="true"
+        />
+        {/* Branding on top of the circle */}
+        <div className="relative z-10 flex flex-col items-center pt-16 pb-8 px-6 text-center">
+          <div className="w-24 h-24 mx-auto rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl shadow-black/20 mb-5">
+            <Zap className="w-12 h-12 text-white" />
           </div>
-          <div className="space-y-1 mt-2">
-            <h1 className="text-3xl font-bold tracking-tight">{appName}</h1>
-            <p className="text-muted-foreground text-sm">Live multiplayer quizzes</p>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">{appName}</h1>
+          <p className="text-white/75 text-sm mt-1">Live multiplayer quizzes</p>
         </div>
       </div>
 
-      {/* Bottom actions — pushed to bottom like a real app */}
-      <div className="p-6 pb-6 space-y-3 w-full max-w-xs mx-auto">
+      {/* Spacer to push buttons down */}
+      <div className="flex-1" />
+
+      {/* Bottom actions */}
+      <div className="p-6 pb-10 space-y-3 w-full max-w-xs mx-auto">
         <Button
           onClick={() => setFeaturesOpen(true)}
           className="w-full h-14 text-base font-semibold rounded-2xl"
