@@ -9,6 +9,7 @@ import PlayerQuestion from "@/components/player/PlayerQuestion"
 import PlayerWaiting from "@/components/player/PlayerWaiting"
 import PlayerLeaderboard from "@/components/player/PlayerLeaderboard"
 import PlayerFinished from "@/components/player/PlayerFinished"
+import PlayerEliminated from "@/components/player/PlayerEliminated"
 
 export default function PlayPage() {
   const { id } = useParams<{ id: string }>()
@@ -134,6 +135,11 @@ export default function PlayPage() {
 
   if (quiz.status === "lobby") {
     return <PlayerLobby quiz={quiz} player={player} />
+  }
+
+  // Show eliminated screen if player is out (elimination mode)
+  if (player.eliminated) {
+    return <PlayerEliminated />
   }
 
   if (quiz.status === "question") {
