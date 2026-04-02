@@ -81,14 +81,56 @@ export default function OrganizerDashboard() {
       if (data?.logo_url) setLogoUrl(data.logo_url)
     })
     // Load draft from Supabase quiz_templates — persists across deployments & devices
-    supabase.from("quiz_templates").select("*").order("updated_at", { ascending: false }).limit(1).single().then(({ data }) => {
-      if (data) {
+    supabase.from("quiz_templates").select("*").order("updated_at", { ascending: false }).limit(1).single().then(async ({ data }) => {
+      if (data && Array.isArray(data.questions) && (data.questions as Question[]).length > 0) {
+        // Template exists and has questions — use it directly
         setTemplateId(data.id as string)
         setQuizTitle((data.title as string) ?? "My Quiz")
         setMode(((data.mode as QuizMode) ?? "classic"))
-        setQuestions(Array.isArray(data.questions) ? (data.questions as Question[]) : [])
+        setQuestions(data.questions as Question[])
+        setLoading(false)
+      } else {
+        // No template yet — seed from the most recent quiz in the quizzes table
+        const { data: latestQuiz } = await supabase
+          .from("quizzes")
+          .select("id, title, mode")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single()
+
+        if (latestQuiz) {
+          const { data: qs } = await supabase
+            .from("questions")
+            .select("*")
+            .eq("quiz_id", latestQuiz.id)
+            .order("position", { ascending: true })
+
+          if (qs && qs.length > 0) {
+            const mapped: Question[] = qs.map(q => ({
+              id: q.id as string,
+              quiz_id: q.quiz_id as string,
+              question_text: q.question_text as string,
+              type: (q.type as QuestionType) ?? "multiple_choice",
+              options: Array.isArray(q.options) ? q.options as string[] : [],
+              correct_index: q.correct_index as number ?? 0,
+              time_limit: q.time_limit as number ?? 20,
+              position: q.position as number ?? 0,
+              image_url: q.image_url as string | undefined,
+            }))
+            setQuizTitle((latestQuiz.title as string) ?? "My Quiz")
+            setMode(((latestQuiz.mode as QuizMode) ?? "classic"))
+            setQuestions(mapped)
+            // Persist this as the new template so it loads fast next time
+            const { data: newTemplate } = await supabase
+              .from("quiz_templates")
+              .insert({ title: latestQuiz.title, mode: latestQuiz.mode ?? "classic", questions: mapped })
+              .select("id")
+              .single()
+            if (newTemplate?.id) setTemplateId(newTemplate.id as string)
+          }
+        }
+        setLoading(false)
       }
-      setLoading(false)
     }).catch(() => setLoading(false))
   }, [router])
 
