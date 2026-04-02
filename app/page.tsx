@@ -75,7 +75,8 @@ export default function Home() {
             <div className="w-12 h-12 mx-auto rounded-2xl bg-secondary flex items-center justify-center">
               <Settings className="w-6 h-6 text-foreground" />
             </div>
-            <h2 className="text-xl font-bold mt-3">Organizer</h2>
+            <p className="text-primary text-sm font-medium mt-3">Hello Organiser</p>
+            <h2 className="text-xl font-bold">Organizer Login</h2>
             <p className="text-muted-foreground text-sm">Enter your PIN to continue</p>
           </div>
 

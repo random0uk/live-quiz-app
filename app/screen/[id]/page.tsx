@@ -486,41 +486,81 @@ export default function ProjectorScreen() {
 
   // Leaderboard
   if (quiz.status === "leaderboard" || quiz.status === "finished") {
-    const top = players.slice(0, 10)
+    const podium = players.slice(0, 3)
+    const rest = players.slice(3, 12)
+    // Podium order: 2nd, 1st, 3rd
+    const podiumOrder = [podium[1], podium[0], podium[2]].filter(Boolean)
+    const podiumHeights = [podium[1] ? "h-28" : "h-0", "h-36", podium[2] ? "h-20" : "h-0"]
+    const podiumPositions = [1, 0, 2] // maps podiumOrder index → original rank index
+    const medalColors = ["bg-gray-400", "bg-yellow-400", "bg-amber-600"]
+    const medalTextColors = ["text-gray-700", "text-yellow-700", "text-amber-700"]
+    const podiumBg = ["bg-gray-100 border-gray-300", "bg-yellow-50 border-yellow-300", "bg-amber-50 border-amber-300"]
+    const rankLabels = ["2nd", "1st", "3rd"]
+
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+      <div className="h-screen flex flex-col items-center justify-center bg-background px-10 py-8 gap-8 overflow-hidden">
+        {/* Title */}
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="text-4xl font-black text-center tracking-tight"
         >
-          <h2 className="text-2xl font-bold text-center mb-6">
-            {quiz.status === "finished" ? "Final Results" : "Leaderboard"}
-          </h2>
-          <div className="space-y-2">
-            {top.map((p, i) => (
+          {quiz.status === "finished" ? "Final Results" : "Leaderboard"}
+        </motion.h2>
+
+        {/* Podium */}
+        <div className="flex items-end justify-center gap-4 w-full max-w-2xl">
+          {podiumOrder.map((p, i) => {
+            const rank = podiumPositions[i]
+            const avatarBg = medalColors[rank]
+            const heights = ["h-28", "h-36", "h-20"]
+            return (
               <motion.div
                 key={p.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className={`flex items-center justify-between p-4 rounded-xl ${
-                  i === 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border"
-                }`}
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: rank * 0.15, type: "spring", stiffness: 260, damping: 22 }}
+                className="flex flex-col items-center gap-2 flex-1"
               >
-                <div className="flex items-center gap-3">
-                  <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${
-                    i === 0 ? "bg-primary-foreground/20" : "bg-secondary"
-                  }`}>
-                    {i + 1}
-                  </span>
-                  <span className="font-medium">{p.name}</span>
+                {/* Avatar */}
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-lg ${avatarBg}`}>
+                  <span className={medalTextColors[rank]}>{p.name.charAt(0).toUpperCase()}</span>
                 </div>
-                <span className="font-mono font-bold">{p.score}</span>
+                <p className="font-bold text-base text-center truncate max-w-[120px]">{p.name}</p>
+                <p className="font-mono font-bold text-sm text-muted-foreground">{p.score} pts</p>
+                {/* Podium block */}
+                <div className={`w-full ${heights[rank]} rounded-t-xl border-2 ${podiumBg[rank]} flex items-start justify-center pt-2`}>
+                  <span className={`text-xl font-black ${medalTextColors[rank]}`}>{rankLabels[rank]}</span>
+                </div>
               </motion.div>
-            ))}
+            )
+          })}
+        </div>
+
+        {/* Rest of players — compact grid */}
+        {rest.length > 0 && (
+          <div className="w-full max-w-3xl">
+            <div className="grid grid-cols-3 gap-2">
+              {rest.map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.04 }}
+                  className="flex items-center justify-between px-4 py-2.5 bg-card border border-border rounded-xl"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-secondary text-xs font-bold shrink-0">
+                      {i + 4}
+                    </span>
+                    <span className="font-medium text-sm truncate">{p.name}</span>
+                  </div>
+                  <span className="font-mono font-bold text-sm shrink-0 ml-2">{p.score}</span>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </motion.div>
+        )}
       </div>
     )
   }
