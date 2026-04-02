@@ -24,8 +24,10 @@ export default function PlayerFinished({ players, currentPlayerId }: Props) {
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Trophy header */}
       <div className="bg-primary pt-14 pb-10 px-6 flex flex-col items-center gap-3">
-        <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-          <Trophy className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-white/20 flex items-center justify-center shadow-lg">
+          {me?.avatar_url
+            ? <img src={me.avatar_url} alt={me.name} className="w-full h-full object-cover" />
+            : <Trophy className="w-8 h-8 text-white" />}
         </div>
         <div className="text-center">
           <p className="text-white text-2xl font-bold">Game Over</p>
@@ -70,9 +72,14 @@ export default function PlayerFinished({ players, currentPlayerId }: Props) {
                 key={p.id}
                 className={`flex items-center justify-between px-4 py-3 rounded-2xl ${isMe ? "bg-primary text-primary-foreground" : "bg-secondary/60"}`}
               >
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-bold w-8 ${isMe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{medal}</span>
-                  <span className="font-semibold text-sm">{p.name}{isMe ? " (you)" : ""}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold w-7 shrink-0 ${isMe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{medal}</span>
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0">
+                    {p.avatar_url
+                      ? <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                      : <span className={`text-xs font-bold ${isMe ? "text-primary-foreground" : "text-foreground"}`}>{p.name.charAt(0).toUpperCase()}</span>}
+                  </div>
+                  <span className="font-semibold text-sm truncate">{p.name}{isMe ? " (you)" : ""}</span>
                 </div>
                 <span className="font-mono font-bold text-sm">{p.score}</span>
               </div>

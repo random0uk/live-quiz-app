@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Image must be under 5MB" }, { status: 400 })
     }
 
-    const folder = type === "logo" ? "logos" : "puzzles"
+    const folder = type === "logo" ? "logos" : type === "avatar" ? "avatars" : "puzzles"
     const blob = await put(`${folder}/${Date.now()}-${file.name}`, file, {
       access: "public",
     })

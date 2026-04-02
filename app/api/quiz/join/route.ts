@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
-    const { game_code, player_name } = await req.json()
+    const { game_code, player_name, avatar_url } = await req.json()
 
     if (!game_code || !player_name) {
       return NextResponse.json({ error: 'Missing game code or player name' }, { status: 400 })
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const { data: player, error: playerError } = await supabase
       .from('players')
-      .insert({ quiz_id: quiz.id, name: player_name.trim() })
+      .insert({ quiz_id: quiz.id, name: player_name.trim(), avatar_url: avatar_url ?? null })
       .select()
       .single()
 

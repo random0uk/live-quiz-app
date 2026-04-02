@@ -16,7 +16,7 @@ export default function ProjectorScreen() {
   const [answers, setAnswers] = useState<{ selected_index: number; is_correct: boolean; question_id: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
-  const [joinToasts, setJoinToasts] = useState<{ id: string; name: string }[]>([])
+  const [joinToasts, setJoinToasts] = useState<{ id: string; name: string; avatar_url?: string }[]>([])
   const prevPlayerIdsRef = useRef<Set<string>>(new Set())
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { play } = useSound()
@@ -107,7 +107,7 @@ export default function ProjectorScreen() {
         if (!prevPlayerIdsRef.current.has(newPlayer.id)) {
           prevPlayerIdsRef.current.add(newPlayer.id)
           const toastId = crypto.randomUUID()
-          setJoinToasts(prev => [...prev, { id: toastId, name: newPlayer.name }])
+          setJoinToasts(prev => [...prev, { id: toastId, name: newPlayer.name, avatar_url: newPlayer.avatar_url }])
           setTimeout(() => setJoinToasts(prev => prev.filter(t => t.id !== toastId)), 3000)
         }
       })
@@ -223,8 +223,10 @@ export default function ProjectorScreen() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   className="flex items-center gap-3 px-4 py-3 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/20"
                 >
-                  <div className="w-8 h-8 bg-white/25 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {toast.name.charAt(0).toUpperCase()}
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-white/25 text-white font-bold text-sm shrink-0">
+                    {toast.avatar_url
+                      ? <img src={toast.avatar_url} alt={toast.name} className="w-full h-full object-cover" />
+                      : toast.name.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-sm font-medium text-white">
                     <span className="font-bold">{toast.name}</span> joined!
@@ -270,8 +272,10 @@ export default function ProjectorScreen() {
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
                         className="p-3 bg-secondary/60 rounded-xl text-center"
                       >
-                        <div className="w-9 h-9 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-1.5">
-                          <span className="text-primary font-bold text-sm">{p.name.charAt(0).toUpperCase()}</span>
+                        <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-1.5 bg-primary/20">
+                          {p.avatar_url
+                            ? <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                            : <span className="text-primary font-bold text-sm">{p.name.charAt(0).toUpperCase()}</span>}
                         </div>
                         <p className="font-medium text-xs truncate">{p.name}</p>
                       </motion.div>
@@ -523,8 +527,10 @@ export default function ProjectorScreen() {
                 className="flex flex-col items-center gap-2 flex-1"
               >
                 {/* Avatar */}
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-lg ${avatarBg}`}>
-                  <span className={medalTextColors[rank]}>{p.name.charAt(0).toUpperCase()}</span>
+                <div className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white font-black text-2xl shadow-lg ${p.avatar_url ? "" : avatarBg}`}>
+                  {p.avatar_url
+                    ? <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                    : <span className={medalTextColors[rank]}>{p.name.charAt(0).toUpperCase()}</span>}
                 </div>
                 <p className="font-bold text-base text-center truncate max-w-[120px]">{p.name}</p>
                 <p className="font-mono font-bold text-sm text-muted-foreground">{p.score} pts</p>

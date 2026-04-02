@@ -589,6 +589,8 @@ export default function OrganizerDashboard() {
                 <option value={15}>15s</option>
                 <option value={20}>20s</option>
                 <option value={30}>30s</option>
+                <option value={45}>45s</option>
+                <option value={60}>60s</option>
               </select>
               <Button
                 onClick={addQuestion}
