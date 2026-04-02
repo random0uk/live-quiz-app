@@ -29,11 +29,11 @@ export default function OrganizerLogo() {
   if (!logoUrl) return null
 
   return (
-    <div className="fixed top-3 left-3 z-50 pointer-events-none">
+    <div className="fixed top-4 left-5 z-50 pointer-events-none">
       <img
         src={logoUrl}
         alt="Organizer logo"
-        className="h-8 w-auto max-w-[80px] object-contain rounded-lg opacity-90"
+        className="h-14 w-auto max-w-[140px] object-contain rounded-xl opacity-95"
       />
     </div>
   )

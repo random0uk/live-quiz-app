@@ -1,7 +1,7 @@
 {
-  "name": "Awanies — Live Multiplayer Quizzes",
+  "name": "Awanies — Interactive Quizzes",
   "short_name": "Awanies",
-  "description": "Host and play live multiplayer quiz games",
+  "description": "Host and play interactive quiz games",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

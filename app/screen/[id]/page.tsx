@@ -491,8 +491,9 @@ export default function ProjectorScreen() {
 
   // Leaderboard
   if (quiz.status === "leaderboard" || quiz.status === "finished") {
-    const podium = players.slice(0, 3)
-    const rest = players.slice(3, 12)
+    const sorted = [...players].sort((a, b) => b.score - a.score)
+    const podium = sorted.slice(0, 3)
+    const rest = sorted.slice(3, 12)
     // Podium order: 2nd, 1st, 3rd
     const podiumOrder = [podium[1], podium[0], podium[2]].filter(Boolean)
     const podiumHeights = [podium[1] ? "h-28" : "h-0", "h-36", podium[2] ? "h-20" : "h-0"]

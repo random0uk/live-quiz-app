@@ -125,7 +125,7 @@ export default function Home() {
           <Zap className="w-14 h-14 text-white" />
           <div>
             <h1 className="text-4xl font-bold tracking-tight text-white">{appName}</h1>
-            <p className="text-white/75 text-sm mt-1">Live multiplayer quizzes</p>
+            <p className="text-white/75 text-sm mt-1">Interactive quizzes</p>
           </div>
         </div>
       </div>
