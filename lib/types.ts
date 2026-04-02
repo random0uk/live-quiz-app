@@ -44,6 +44,7 @@ export interface Player {
   joined_at: string
   eliminated: boolean
   team?: string
+  avatar_url?: string
 }
 
 export interface Answer {
