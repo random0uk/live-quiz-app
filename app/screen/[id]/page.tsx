@@ -15,6 +15,7 @@ export default function ProjectorScreen() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [answers, setAnswers] = useState<{ selected_index: number; is_correct: boolean; question_id: string }[]>([])
+  const [questionScores, setQuestionScores] = useState<{ player_id: string; points_earned: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
   const [joinToasts, setJoinToasts] = useState<{ id: string; name: string; avatar_url?: string }[]>([])
@@ -96,6 +97,23 @@ export default function ProjectorScreen() {
                   .then(({ data: ans }) => { if (ans) setAnswers(ans) })
               }
             })
+          }
+          // Fetch per-question scores when showing the mid-game leaderboard
+          if (newQuiz.status === "leaderboard") {
+            supabase.from("questions").select("id").eq("quiz_id", id).order("position").then(({ data: qs }) => {
+              if (!qs) return
+              const currentQ = qs[newQuiz.current_question_index]
+              if (currentQ) {
+                supabase.from("answers")
+                  .select("player_id, points_earned")
+                  .eq("question_id", currentQ.id)
+                  .then(({ data: ans }) => { if (ans) setQuestionScores(ans) })
+              }
+            })
+          }
+          // Clear per-question scores on final results — we use cumulative totals there
+          if (newQuiz.status === "finished") {
+            setQuestionScores([])
           }
         }
       })
@@ -489,15 +507,10 @@ export default function ProjectorScreen() {
     )
   }
 
-  // Leaderboard
-  if (quiz.status === "leaderboard" || quiz.status === "finished") {
-    // Sort by score descending — overall winners
-    const sorted = [...players].sort((a, b) => b.score - a.score)
+  // Helper: render a podium from a sorted list of { name, score, avatar_url, id }
+  const renderPodium = (sorted: Player[], title: string, showConfetti: boolean) => {
     const podium = sorted.slice(0, 3)
     const rest = sorted.slice(3, 12)
-
-    // Visual podium order: 2nd (left), 1st (centre/tallest), 3rd (right)
-    // Each entry: { player, rank (0=1st,1=2nd,2=3rd), blockHeight, label, colors }
     const podiumSlots = [
       { player: podium[1], rank: 1, blockH: "h-28", label: "2nd", avatarBg: "bg-gray-300",   textColor: "text-gray-700",  blockBg: "bg-gray-100 border-gray-300" },
       { player: podium[0], rank: 0, blockH: "h-36", label: "1st", avatarBg: "bg-yellow-400", textColor: "text-yellow-700", blockBg: "bg-yellow-50 border-yellow-300" },
@@ -506,27 +519,16 @@ export default function ProjectorScreen() {
 
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-background px-10 py-8 gap-8 overflow-hidden">
-        <Confetti active={true} />
-        {/* Title */}
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-black text-center tracking-tight"
-        >
-          {quiz.status === "finished" ? "Final Results" : "Leaderboard"}
+        {showConfetti && <Confetti active={true} />}
+        <motion.h2 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-black text-center tracking-tight">
+          {title}
         </motion.h2>
-
-        {/* Podium */}
         <div className="flex items-end justify-center gap-4 w-full max-w-2xl">
           {podiumSlots.map(({ player: p, rank, blockH, label, avatarBg, textColor, blockBg }) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
+            <motion.div key={p.id} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: rank * 0.12, type: "spring", stiffness: 260, damping: 22 }}
               className="flex flex-col items-center gap-2 flex-1"
             >
-              {/* Avatar */}
               <div className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-black text-2xl shadow-lg ${p.avatar_url ? "" : avatarBg}`}>
                 {p.avatar_url
                   ? <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
@@ -534,30 +536,22 @@ export default function ProjectorScreen() {
               </div>
               <p className="font-bold text-base text-center truncate max-w-[120px]">{p.name}</p>
               <p className="font-mono font-bold text-sm text-muted-foreground">{p.score} pts</p>
-              {/* Podium block */}
               <div className={`w-full ${blockH} rounded-t-xl border-2 ${blockBg} flex items-start justify-center pt-2`}>
                 <span className={`text-xl font-black ${textColor}`}>{label}</span>
               </div>
             </motion.div>
           ))}
         </div>
-
-        {/* Rest of players — compact grid */}
         {rest.length > 0 && (
           <div className="w-full max-w-3xl">
             <div className="grid grid-cols-3 gap-2">
               {rest.map((p, i) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + i * 0.04 }}
                   className="flex items-center justify-between px-4 py-2.5 bg-card border border-border rounded-xl"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-secondary text-xs font-bold shrink-0">
-                      {i + 4}
-                    </span>
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-secondary text-xs font-bold shrink-0">{i + 4}</span>
                     <span className="font-medium text-sm truncate">{p.name}</span>
                   </div>
                   <span className="font-mono font-bold text-sm shrink-0 ml-2">{p.score}</span>
@@ -568,6 +562,30 @@ export default function ProjectorScreen() {
         )}
       </div>
     )
+  }
+
+  // Mid-game Leaderboard — who scored most on THIS question
+  if (quiz.status === "leaderboard") {
+    const currentQ = questions[quiz.current_question_index]
+    // Build per-question sorted list using questionScores + player names
+    const qSorted: Player[] = questionScores
+      .map(qs => {
+        const p = players.find(pl => pl.id === qs.player_id)
+        if (!p) return null
+        return { ...p, score: qs.points_earned }
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.score - a!.score) as Player[]
+
+    const qNum = quiz.current_question_index + 1
+    const title = `Q${qNum} — ${currentQ?.question_text ? currentQ.question_text.slice(0, 40) + (currentQ.question_text.length > 40 ? "…" : "") : "Results"}`
+    return renderPodium(qSorted.length > 0 ? qSorted : [...players].sort((a, b) => b.score - a.score), title, false)
+  }
+
+  // Final Results — overall cumulative winners across all questions
+  if (quiz.status === "finished") {
+    const overallSorted = [...players].sort((a, b) => b.score - a.score)
+    return renderPodium(overallSorted, "Final Results", true)
   }
 
   return spinner
