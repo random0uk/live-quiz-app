@@ -4,6 +4,7 @@ import { Player } from "@/lib/types"
 import Link from "next/link"
 import { Trophy, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Confetti from "@/components/Confetti"
 interface Props {
   players: Player[]
   currentPlayerId: string
@@ -22,6 +23,7 @@ export default function PlayerFinished({ players, currentPlayerId }: Props) {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
+      <Confetti active={myRank <= 3} />
       {/* Trophy header */}
       <div className="bg-primary pt-14 pb-10 px-6 flex flex-col items-center gap-3">
         <div className="w-16 h-16 rounded-full overflow-hidden bg-white/20 flex items-center justify-center shadow-lg">

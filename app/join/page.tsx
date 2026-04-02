@@ -25,11 +25,44 @@ function JoinForm() {
     if (code) setJoinCode(code.toUpperCase())
   }, [searchParams])
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image client-side before storing — max 400px, JPEG 0.7 quality
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX = 400
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX }
+          else { width = Math.round((width * MAX) / height); height = MAX }
+        }
+        const canvas = document.createElement("canvas")
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => resolve(blob ? new File([blob], "avatar.jpg", { type: "image/jpeg" }) : file),
+          "image/jpeg",
+          0.72
+        )
+      }
+      img.onerror = () => resolve(file)
+      img.src = url
+    })
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setAvatarFile(file)
+    // Show original preview instantly for snappy UX
     setAvatarPreview(URL.createObjectURL(file))
+    // Compress in background
+    const compressed = await compressImage(file)
+    setAvatarFile(compressed)
   }
 
   const removeAvatar = () => {

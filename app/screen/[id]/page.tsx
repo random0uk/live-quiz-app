@@ -7,6 +7,7 @@ import type { Quiz, Question, Player } from "@/lib/types"
 import { QRCodeSVG } from "qrcode.react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSound } from "@/hooks/use-sound"
+import Confetti from "@/components/Confetti"
 
 export default function ProjectorScreen() {
   const { id } = useParams<{ id: string }>()
@@ -503,6 +504,7 @@ export default function ProjectorScreen() {
 
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-background px-10 py-8 gap-8 overflow-hidden">
+        <Confetti active={true} />
         {/* Title */}
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
