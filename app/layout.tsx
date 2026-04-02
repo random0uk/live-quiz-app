@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import Footer from '@/components/Footer'
 import OrganizerLogo from '@/components/OrganizerLogo'
-import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -51,9 +50,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Awanies" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
+          }}
+        />
       </head>
       <body className="font-sans antialiased flex flex-col min-h-screen">
-        <ServiceWorkerRegistration />
         <OrganizerLogo />
         <div className="flex-1 overflow-y-auto">
           {children}
