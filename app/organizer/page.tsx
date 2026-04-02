@@ -88,11 +88,8 @@ export default function OrganizerDashboard() {
         if (data?.logo_url) setLogoUrl(data.logo_url)
       })
 
-    // Load questions — priority:
-    // 1. quiz_templates table (organizer's saved draft)
-    // 2. questions table from the most recent quiz (fallback for existing data)
     const loadQuestions = async () => {
-      // Try quiz_templates first
+      // 1. Try quiz_templates — the organizer's explicitly saved draft
       const { data: tpl } = await supabase
         .from("quiz_templates")
         .select("id, title, mode, questions")
@@ -109,23 +106,22 @@ export default function OrganizerDashboard() {
         return
       }
 
-      // Fall back to the most recent quiz's questions in the questions table
-      const { data: latestQuiz } = await supabase
-        .from("quizzes")
-        .select("id, title, mode")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
+      // 2. Fall back: load ALL questions ever created, deduplicated by question_text,
+      //    ordered by most recent quiz first so the best version of each question wins.
+      const { data: allQuestions } = await supabase
+        .from("questions")
+        .select("id, quiz_id, question_text, type, options, correct_index, time_limit, position, image_url")
+        .order("position", { ascending: true })
 
-      if (latestQuiz) {
-        const { data: qs } = await supabase
-          .from("questions")
-          .select("*")
-          .eq("quiz_id", latestQuiz.id)
-          .order("position", { ascending: true })
-
-        if (qs && qs.length > 0) {
-          const mapped: Question[] = qs.map((q) => ({
+      if (allQuestions && allQuestions.length > 0) {
+        // Deduplicate: keep only the first occurrence of each question_text
+        const seen = new Set<string>()
+        const mapped: Question[] = []
+        for (const q of allQuestions) {
+          const key = (q.question_text as string).trim().toLowerCase()
+          if (seen.has(key)) continue
+          seen.add(key)
+          mapped.push({
             id: q.id as string,
             quiz_id: "",
             question_text: q.question_text as string,
@@ -135,24 +131,18 @@ export default function OrganizerDashboard() {
             time_limit: (q.time_limit as number) ?? 20,
             position: (q.position as number) ?? 0,
             image_url: q.image_url as string | undefined,
-          }))
-
-          setQuizTitle((latestQuiz.title as string) ?? "My Quiz")
-          setMode(((latestQuiz.mode as QuizMode) ?? "classic"))
-          setQuestions(mapped)
-
-          // Save into quiz_templates so it loads fast next time
-          const { data: newTpl } = await supabase
-            .from("quiz_templates")
-            .insert({
-              title: latestQuiz.title,
-              mode: latestQuiz.mode ?? "classic",
-              questions: mapped,
-            })
-            .select("id")
-            .single()
-          if (newTpl?.id) localStorage.setItem("_tpl_id", newTpl.id as string)
+          })
         }
+
+        setQuestions(mapped)
+
+        // Persist into quiz_templates so next load is instant
+        const { data: newTpl } = await supabase
+          .from("quiz_templates")
+          .insert({ title: "My Quiz", mode: "classic", questions: mapped })
+          .select("id")
+          .single()
+        if (newTpl?.id) localStorage.setItem("_tpl_id", newTpl.id as string)
       }
 
       setLoading(false)
