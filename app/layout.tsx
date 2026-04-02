@@ -9,8 +9,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Awanies — Live Multiplayer Quizzes',
-  description: 'Host and play live multiplayer quiz games',
+  title: 'Awanies — Interactive Quizzes',
+  description: 'Host and play interactive quiz games',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    title: 'Awanies — Live Multiplayer Quizzes',
-    description: 'Host and play live multiplayer quiz games',
+    title: 'Awanies — Interactive Quizzes',
+    description: 'Host and play interactive quiz games',
   },
 }
 
