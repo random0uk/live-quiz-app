@@ -1,0 +1,34 @@
+{
+  "name": "Awanies — Live Multiplayer Quizzes",
+  "short_name": "Awanies",
+  "description": "Host and play live multiplayer quiz games",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Organizer Login",
+      "short_name": "Organizer",
+      "description": "Login as organizer to manage quizzes",
+      "url": "/?organizer=1",
+      "icons": [{ "src": "/icons/icon-192.jpg", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["games", "education"]
+}
