@@ -1,14 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
 /**
  * Fetches the organizer logo from Supabase and renders it fixed at the top-left.
- * Renders nothing if no logo has been uploaded.
+ * Only visible on the projector/screen view (/screen/...).
  */
 export default function OrganizerLogo() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const pathname = usePathname()
 
   useEffect(() => {
     const supabase = createClient()
@@ -22,6 +24,8 @@ export default function OrganizerLogo() {
       })
   }, [])
 
+  // Only show on the projector screen view
+  if (!pathname.startsWith("/screen/")) return null
   if (!logoUrl) return null
 
   return (
