@@ -491,17 +491,18 @@ export default function ProjectorScreen() {
 
   // Leaderboard
   if (quiz.status === "leaderboard" || quiz.status === "finished") {
+    // Sort by score descending — overall winners
     const sorted = [...players].sort((a, b) => b.score - a.score)
     const podium = sorted.slice(0, 3)
     const rest = sorted.slice(3, 12)
-    // Podium order: 2nd, 1st, 3rd
-    const podiumOrder = [podium[1], podium[0], podium[2]].filter(Boolean)
-    const podiumHeights = [podium[1] ? "h-28" : "h-0", "h-36", podium[2] ? "h-20" : "h-0"]
-    const podiumPositions = [1, 0, 2] // maps podiumOrder index → original rank index
-    const medalColors = ["bg-gray-400", "bg-yellow-400", "bg-amber-600"]
-    const medalTextColors = ["text-gray-700", "text-yellow-700", "text-amber-700"]
-    const podiumBg = ["bg-gray-100 border-gray-300", "bg-yellow-50 border-yellow-300", "bg-amber-50 border-amber-300"]
-    const rankLabels = ["2nd", "1st", "3rd"]
+
+    // Visual podium order: 2nd (left), 1st (centre/tallest), 3rd (right)
+    // Each entry: { player, rank (0=1st,1=2nd,2=3rd), blockHeight, label, colors }
+    const podiumSlots = [
+      { player: podium[1], rank: 1, blockH: "h-28", label: "2nd", avatarBg: "bg-gray-300",   textColor: "text-gray-700",  blockBg: "bg-gray-100 border-gray-300" },
+      { player: podium[0], rank: 0, blockH: "h-36", label: "1st", avatarBg: "bg-yellow-400", textColor: "text-yellow-700", blockBg: "bg-yellow-50 border-yellow-300" },
+      { player: podium[2], rank: 2, blockH: "h-20", label: "3rd", avatarBg: "bg-amber-500",  textColor: "text-amber-700",  blockBg: "bg-amber-50 border-amber-300" },
+    ].filter(s => s.player)
 
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-background px-10 py-8 gap-8 overflow-hidden">
@@ -517,33 +518,28 @@ export default function ProjectorScreen() {
 
         {/* Podium */}
         <div className="flex items-end justify-center gap-4 w-full max-w-2xl">
-          {podiumOrder.map((p, i) => {
-            const rank = podiumPositions[i]
-            const avatarBg = medalColors[rank]
-            const heights = ["h-28", "h-36", "h-20"]
-            return (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: rank * 0.15, type: "spring", stiffness: 260, damping: 22 }}
-                className="flex flex-col items-center gap-2 flex-1"
-              >
-                {/* Avatar */}
-                <div className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-white font-black text-2xl shadow-lg ${p.avatar_url ? "" : avatarBg}`}>
-                  {p.avatar_url
-                    ? <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
-                    : <span className={medalTextColors[rank]}>{p.name.charAt(0).toUpperCase()}</span>}
-                </div>
-                <p className="font-bold text-base text-center truncate max-w-[120px]">{p.name}</p>
-                <p className="font-mono font-bold text-sm text-muted-foreground">{p.score} pts</p>
-                {/* Podium block */}
-                <div className={`w-full ${heights[rank]} rounded-t-xl border-2 ${podiumBg[rank]} flex items-start justify-center pt-2`}>
-                  <span className={`text-xl font-black ${medalTextColors[rank]}`}>{rankLabels[rank]}</span>
-                </div>
-              </motion.div>
-            )
-          })}
+          {podiumSlots.map(({ player: p, rank, blockH, label, avatarBg, textColor, blockBg }) => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: rank * 0.12, type: "spring", stiffness: 260, damping: 22 }}
+              className="flex flex-col items-center gap-2 flex-1"
+            >
+              {/* Avatar */}
+              <div className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center font-black text-2xl shadow-lg ${p.avatar_url ? "" : avatarBg}`}>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover" />
+                  : <span className={textColor}>{p.name.charAt(0).toUpperCase()}</span>}
+              </div>
+              <p className="font-bold text-base text-center truncate max-w-[120px]">{p.name}</p>
+              <p className="font-mono font-bold text-sm text-muted-foreground">{p.score} pts</p>
+              {/* Podium block */}
+              <div className={`w-full ${blockH} rounded-t-xl border-2 ${blockBg} flex items-start justify-center pt-2`}>
+                <span className={`text-xl font-black ${textColor}`}>{label}</span>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
         {/* Rest of players — compact grid */}
