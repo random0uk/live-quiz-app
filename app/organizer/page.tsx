@@ -64,6 +64,7 @@ export default function OrganizerDashboard() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoError, setLogoError] = useState<string | null>(null)
+  const [templateId, setTemplateId] = useState<string | null>(null)
 
   useBrandColor(brandColor)
 
@@ -72,10 +73,6 @@ export default function OrganizerDashboard() {
       router.push("/")
       return
     }
-    const saved = localStorage.getItem("draft_questions")
-    if (saved) setQuestions(JSON.parse(saved))
-    const savedTitle = localStorage.getItem("draft_title")
-    if (savedTitle) setQuizTitle(savedTitle)
     const supabase = createClient()
     supabase.from("organizer_settings").select("app_name, brand_color, organizer_name, logo_url").eq("id", 1).single().then(({ data }) => {
       if (data?.app_name) setAppName(data.app_name)
@@ -83,8 +80,33 @@ export default function OrganizerDashboard() {
       if (data?.organizer_name) setOrganizerName(data.organizer_name)
       if (data?.logo_url) setLogoUrl(data.logo_url)
     })
-    setLoading(false)
+    // Load draft from Supabase quiz_templates — persists across deployments & devices
+    supabase.from("quiz_templates").select("*").order("updated_at", { ascending: false }).limit(1).single().then(({ data }) => {
+      if (data) {
+        setTemplateId(data.id as string)
+        setQuizTitle((data.title as string) ?? "My Quiz")
+        setMode(((data.mode as QuizMode) ?? "classic"))
+        setQuestions(Array.isArray(data.questions) ? (data.questions as Question[]) : [])
+      }
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [router])
+
+  // Persist draft to Supabase on every change — survives redeployments
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const saveDraft = async (newQ: Question[], newTitle: string, newMode: QuizMode, tid: string | null): Promise<string | null> => {
+    const supabase = createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = { title: newTitle, mode: newMode, questions: newQ, updated_at: new Date().toISOString() }
+    if (tid) {
+      await supabase.from("quiz_templates").update(payload).eq("id", tid)
+      return tid
+    } else {
+      const { data } = await supabase.from("quiz_templates").insert({ title: newTitle, mode: newMode, questions: newQ }).select("id").single()
+      if (data?.id) { setTemplateId(data.id as string); return data.id as string }
+      return null
+    }
+  }
 
   const saveAppName = async () => {
     setSavingName(true)
@@ -178,20 +200,19 @@ export default function OrganizerDashboard() {
     }
     const updated = [...questions, newQ]
     setQuestions(updated)
-    localStorage.setItem("draft_questions", JSON.stringify(updated))
+    saveDraft(updated, quizTitle, mode, templateId)
     setForm(DEFAULT_FORM)
   }
 
   const removeQuestion = (id: string) => {
     const updated = questions.filter(q => q.id !== id)
     setQuestions(updated)
-    localStorage.setItem("draft_questions", JSON.stringify(updated))
+    saveDraft(updated, quizTitle, mode, templateId)
   }
 
   const createQuiz = async () => {
     if (questions.length === 0) return
     setStarting(true)
-    localStorage.setItem("draft_title", quizTitle)
     const gameCode = customCode.trim().toUpperCase() || Math.random().toString(36).substring(2, 8).toUpperCase()
     const supabase = createClient()
 
