@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       mode
     })
   } catch (e) {
-    console.error('[v0] Answer API error:', e)
+    console.error('Answer API error:', e)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

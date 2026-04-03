@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    console.error("[v0] BLOB_READ_WRITE_TOKEN is not set")
+
     return NextResponse.json({ error: "BLOB_READ_WRITE_TOKEN is not configured on the server. Please add it as an environment variable." }, { status: 500 })
   }
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: blob.url })
   } catch (error) {
-    console.error("[v0] Upload error:", error)
+
     return NextResponse.json({ error: "Upload failed: " + (error instanceof Error ? error.message : String(error)) }, { status: 500 })
   }
 }

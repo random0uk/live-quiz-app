@@ -305,7 +305,7 @@ export default function OrganizerDashboard() {
     )
 
     if (qError) {
-      console.error("[v0] questions insert error:", qError.message)
+      console.error("questions insert error:", qError.message)
       setStarting(false)
       return
     }
