@@ -2,22 +2,33 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Zap, Settings, ArrowLeft, Sparkles } from "lucide-react"
+import { Settings, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
+import HeroSection from "@/components/hero-section"
 import FeaturesSheet from "@/components/FeaturesSheet"
 import { applyBrandColor } from "@/hooks/use-brand-color"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function Home() {
   const router = useRouter()
   const [view, setView] = useState<"home" | "organizer">("home")
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
-  const [appName, setAppName] = useState("Awaneies")
+  const [appName, setAppName] = useState("Awane Quiz")
   const [organizerName, setOrganizerName] = useState("Organizer")
   const [featuresOpen, setFeaturesOpen] = useState(false)
   const [colorReady, setColorReady] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
+  const [joinPin, setJoinPin] = useState("")
+  const [joinError, setJoinError] = useState("")
 
   useEffect(() => {
     const supabase = createClient()
@@ -56,13 +67,35 @@ export default function Home() {
     }
   }
 
+  const handleJoinQuiz = async () => {
+    if (!joinPin.trim()) return
+    setJoinError("")
+    
+    const supabase = createClient()
+    const { data: quizzes } = await supabase
+      .from("quizzes")
+      .select("id")
+      .eq("pin_code", joinPin.toUpperCase())
+      .single()
+
+    if (quizzes?.id) {
+      router.push(`/play/${quizzes.id}`)
+    } else {
+      setJoinError("Quiz not found. Check your PIN.")
+    }
+  }
+
   // Organizer login view
   if (view === "organizer") {
     return (
       <div className="h-full flex flex-col bg-background">
         <div className="p-4">
           <button
-            onClick={() => { setView("home" as const); setError(""); setPin("") }}
+            onClick={() => {
+              setView("home" as const)
+              setError("")
+              setPin("")
+            }}
             className="flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -109,50 +142,57 @@ export default function Home() {
     )
   }
 
-  // Home view — half-circle hero top, buttons bottom, no scroll
+  // Home view with hero section
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Half-circle hero — takes ~55% of screen height */}
-      <div className="relative flex flex-col items-center" style={{ height: "55%" }}>
-        {/* Oversized ellipse, only bottom portion visible */}
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 bg-primary rounded-b-[50%]"
-          style={{ width: "150%", height: "100%" }}
-          aria-hidden="true"
-        />
-        {/* Branding centered inside the circle */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 text-center gap-4">
-          <Zap className="w-14 h-14 text-white" />
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-white">{appName}</h1>
-            <p className="text-white/75 text-sm mt-1">Interactive quizzes</p>
+      <HeroSection onStartClick={() => setShowJoinModal(true)} />
+
+      {/* Features Sheet */}
+      <FeaturesSheet
+        open={featuresOpen}
+        onClose={() => setFeaturesOpen(false)}
+        organizerName={organizerName}
+      />
+
+      {/* Join Quiz Modal */}
+      <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Join a Quiz</DialogTitle>
+            <DialogDescription>
+              Enter the quiz PIN provided by the organizer
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="text"
+              value={joinPin}
+              onChange={(e) => setJoinPin(e.target.value.toUpperCase())}
+              placeholder="Enter PIN"
+              className="text-center text-2xl tracking-widest h-14 font-mono"
+              maxLength={6}
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handleJoinQuiz()}
+            />
+            {joinError && <p className="text-destructive text-sm text-center">{joinError}</p>}
+            <Button
+              onClick={handleJoinQuiz}
+              disabled={!joinPin.trim()}
+              className="w-full h-12 font-semibold"
+            >
+              Join Quiz
+            </Button>
+            <Button
+              onClick={() => setView("organizer")}
+              variant="outline"
+              className="w-full h-12 font-semibold"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Organizer Login
+            </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Bottom actions */}
-      <div className="p-6 pb-10 space-y-3 w-full max-w-xs mx-auto">
-        <Button
-          onClick={() => setFeaturesOpen(true)}
-          className="w-full h-14 text-base font-semibold rounded-2xl"
-        >
-          <Sparkles className="w-5 h-5 mr-2" />
-          Discover Features
-        </Button>
-        <Button
-          onClick={() => setView("organizer")}
-          variant="secondary"
-          className="w-full h-12 rounded-2xl"
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Organizer
-        </Button>
-      </div>
-
-      <FeaturesSheet open={featuresOpen} onClose={() => setFeaturesOpen(false)} organizerName={organizerName} />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
