@@ -6,11 +6,11 @@ import { LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const heroImages = [
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=1600&fit=crop',
-  'https://images.unsplash.com/photo-1552821206-c03b93f9e8d9?w=1200&h=1600&fit=crop',
-  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&h=1600&fit=crop',
-  'https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=1200&h=1600&fit=crop',
-  'https://images.unsplash.com/photo-1540497905218-371f79a55e63?w=1200&h=1600&fit=crop',
+  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=1600&fit=crop', // Students studying together
+  'https://images.unsplash.com/photo-1434582881033-7461ffad8d80?w=1200&h=1600&fit=crop', // Group learning
+  'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=1200&h=1600&fit=crop', // Brain/mind concept
+  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=1600&fit=crop', // Collaborative learning
+  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&h=1600&fit=crop', // Knowledge/reading
 ]
 
 interface HeroSectionProps {
@@ -79,7 +79,7 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center justify-center text-center gap-4 max-w-sm flex-1"
+          className="flex flex-col items-start justify-center text-left gap-4 max-w-sm flex-1"
         >
           <div className="space-y-2">
             <h1 className="text-3xl font-black text-white drop-shadow-lg tracking-tight">
@@ -94,17 +94,17 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
             Interactive quizzes that challenge, engage, and inspire. Play live with friends or test your knowledge solo.
           </p>
 
-          {/* Buttons — Side by Side */}
-          <div className="flex gap-2 w-full pt-4 max-w-sm">
+          {/* Buttons — Side by Side with Box Styling */}
+          <div className="flex gap-3 w-full pt-4 max-w-sm">
             <Button
               onClick={onStartClick}
-              className="flex-1 h-11 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full transition-colors text-sm"
+              className="flex-1 h-12 px-5 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-2xl transition-colors text-sm shadow-lg hover:shadow-xl"
             >
               Start Playing
             </Button>
             <Button
               onClick={onLearnMore}
-              className="flex-1 h-11 border-white/80 border bg-transparent text-white hover:bg-white/10 font-medium rounded-full transition-colors text-sm"
+              className="flex-1 h-12 px-5 border-2 border-white/90 bg-transparent text-white hover:bg-white/15 font-bold rounded-2xl transition-colors text-sm shadow-lg hover:shadow-xl"
             >
               Learn More
             </Button>
