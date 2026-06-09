@@ -111,13 +111,13 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
             <div className="flex gap-3 mt-2">
               <button
                 onClick={onStartClick}
-                className="flex-1 h-12 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-sm rounded-xl transition-all shadow-lg active:scale-95"
+                className="flex-1 md:flex-none md:w-44 h-12 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-sm rounded-xl transition-all shadow-lg active:scale-95"
               >
                 Start Playing
               </button>
               <button
                 onClick={onLearnMore}
-                className="flex-1 h-12 bg-transparent border-2 border-white/80 text-white font-bold text-sm rounded-xl hover:bg-white/10 transition-all shadow-lg active:scale-95"
+                className="flex-1 md:flex-none md:w-36 h-12 bg-transparent border-2 border-white/80 text-white font-bold text-sm rounded-xl hover:bg-white/10 transition-all shadow-lg active:scale-95"
               >
                 Learn More
               </button>
