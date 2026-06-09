@@ -22,6 +22,7 @@ export default function Home() {
   const [colorReady, setColorReady] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinPin, setJoinPin] = useState("")
+  const [joinError, setJoinError] = useState("")
   const [darkMode, setDarkMode] = useState(false)
 
   const toggleDark = () => {
@@ -29,6 +30,24 @@ export default function Home() {
       document.documentElement.classList.toggle("dark", !d)
       return !d
     })
+  }
+
+  const handleJoinQuiz = async () => {
+    if (!joinPin.trim()) return
+    setJoinError("")
+    
+    const supabase = createClient()
+    const { data: quizzes } = await supabase
+      .from("quizzes")
+      .select("id")
+      .eq("pin_code", joinPin.toUpperCase())
+      .single()
+
+    if (quizzes?.id) {
+      router.push(`/play/${quizzes.id}`)
+    } else {
+      setJoinError("Quiz not found. Check your PIN.")
+    }
   }
 
   useEffect(() => {
