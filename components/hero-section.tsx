@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const heroImages = [
@@ -58,12 +59,19 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
       </AnimatePresence>
 
       {/* Content Overlay */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-between p-6">
-        {/* Top Logo — Small and Right */}
-        <div className="w-full flex justify-end">
+      <div className="relative z-10 h-full flex flex-col items-center justify-start p-6 pt-12">
+        {/* Top Header — Logo Left, Login Icon Right */}
+        <div className="w-full flex items-center justify-between mb-16">
           <div className="text-xl font-black text-white drop-shadow-lg">
             Awane<span className="text-yellow-400">.</span>
           </div>
+          <button 
+            onClick={onStartClick}
+            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            aria-label="Login"
+          >
+            <LogIn className="w-5 h-5 text-white" />
+          </button>
         </div>
 
         {/* Content Center */}
@@ -71,7 +79,7 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center justify-center text-center gap-4 max-w-sm"
+          className="flex flex-col items-center justify-center text-center gap-4 max-w-sm flex-1"
         >
           <div className="space-y-2">
             <h1 className="text-3xl font-black text-white drop-shadow-lg tracking-tight">
@@ -86,17 +94,17 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
             Interactive quizzes that challenge, engage, and inspire. Play live with friends or test your knowledge solo.
           </p>
 
-          {/* Buttons */}
-          <div className="flex flex-col gap-2 w-full pt-2">
+          {/* Buttons — Side by Side */}
+          <div className="flex gap-2 w-full pt-4 max-w-sm">
             <Button
               onClick={onStartClick}
-              className="w-full h-12 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 h-11 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full transition-colors text-sm"
             >
-              Start Playing Now
+              Start Playing
             </Button>
             <Button
               onClick={onLearnMore}
-              className="w-full h-10 border-white/80 border bg-transparent text-white hover:bg-white/10 font-medium rounded-full transition-colors"
+              className="flex-1 h-11 border-white/80 border bg-transparent text-white hover:bg-white/10 font-medium rounded-full transition-colors text-sm"
             >
               Learn More
             </Button>
@@ -104,7 +112,7 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
         </motion.div>
 
         {/* Bottom Dots Only */}
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 mb-6">
           {heroImages.map((_, i) => (
             <button
               key={i}
@@ -116,9 +124,6 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
             />
           ))}
         </div>
-
-        {/* Bottom Spacing */}
-        <div className="h-4" />
       </div>
     </div>
   )
