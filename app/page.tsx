@@ -87,24 +87,6 @@ export default function Home() {
     }
   }
 
-  const handleJoinQuiz = async () => {
-    if (!joinPin.trim()) return
-    setJoinError("")
-    
-    const supabase = createClient()
-    const { data: quizzes } = await supabase
-      .from("quizzes")
-      .select("id")
-      .eq("pin_code", joinPin.toUpperCase())
-      .single()
-
-    if (quizzes?.id) {
-      router.push(`/play/${quizzes.id}`)
-    } else {
-      setJoinError("Quiz not found. Check your PIN.")
-    }
-  }
-
   // Organizer login view
   if (view === "organizer") {
     return (
