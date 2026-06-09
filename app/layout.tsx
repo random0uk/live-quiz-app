@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import Footer from '@/components/Footer'
 import OrganizerLogo from '@/components/OrganizerLogo'
 import './globals.css'
 
@@ -61,8 +59,6 @@ export default function RootLayout({
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>
-        <Footer />
-        <Analytics />
       </body>
     </html>
   )
