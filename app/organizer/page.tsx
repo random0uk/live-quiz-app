@@ -367,7 +367,7 @@ export default function OrganizerDashboard() {
             <Link href="/organizer/history">
               <Button variant="ghost" size="sm" className="text-muted-foreground text-xs">
                 <History className="w-3 h-3 mr-1" />
-                History
+                Dashboard
               </Button>
             </Link>
             <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground text-xs">Logout</Button>

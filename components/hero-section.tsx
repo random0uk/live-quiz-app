@@ -72,10 +72,10 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
             </span>
             <button
               onClick={onStartClick}
-              className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-colors"
+              className="flex items-center justify-center hover:opacity-70 transition-opacity"
               aria-label="Login"
             >
-              <LogIn className="w-4 h-4 text-white" />
+              <LogIn className="w-5 h-5 text-white" />
             </button>
           </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Settings, ArrowLeft, X } from "lucide-react"
+import { Settings, ArrowLeft, X, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
@@ -22,7 +22,14 @@ export default function Home() {
   const [colorReady, setColorReady] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinPin, setJoinPin] = useState("")
-  const [joinError, setJoinError] = useState("")
+  const [darkMode, setDarkMode] = useState(false)
+
+  const toggleDark = () => {
+    setDarkMode((d) => {
+      document.documentElement.classList.toggle("dark", !d)
+      return !d
+    })
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -55,7 +62,7 @@ export default function Home() {
 
     if (data?.pin_code === pin) {
       localStorage.setItem("organizer_auth", "true")
-      router.push("/organizer")
+      router.push("/organizer/history")
     } else {
       setError("Wrong PIN")
     }
@@ -83,54 +90,73 @@ export default function Home() {
   if (view === "organizer") {
     return (
       <div className="h-full flex flex-col bg-background">
-        <div className="p-4">
+        {/* Top bar: back left, dark/light toggle right */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <button
-            onClick={() => {
-              setView("home" as const)
-              setError("")
-              setPin("")
-            }}
-            className="flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground transition-colors"
+            onClick={() => { setView("home" as const); setError(""); setPin("") }}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
+          <button
+            onClick={toggleDark}
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
+          </button>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-full max-w-xs space-y-2 text-center mb-8">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-secondary flex items-center justify-center">
-              <Settings className="w-6 h-6 text-foreground" />
+        {/* Center content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-8">
+          <div className="w-full max-w-xs">
+            {/* Title */}
+            <div className="mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-yellow-500 mb-1">Organizer</p>
+              <h2 className="text-2xl font-black text-foreground leading-tight">Welcome back</h2>
+              <p className="text-sm text-muted-foreground mt-1">Enter your PIN to access the dashboard</p>
             </div>
-            <p className="text-primary text-sm font-medium mt-3">Hello Organiser</p>
-            <h2 className="text-xl font-bold">Organizer Login</h2>
-            <p className="text-muted-foreground text-sm">Enter your PIN to continue</p>
-          </div>
 
-          <div className="w-full max-w-xs space-y-3">
-            <Input
-              type="password"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="PIN"
-              className="text-center text-2xl tracking-widest h-14"
-              maxLength={6}
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleOrganizerLogin()}
-            />
-            {error && <p className="text-destructive text-sm text-center">{error}</p>}
+            {/* PIN Input */}
+            <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="password"
+                  value={pin}
+                  onChange={(e) => { setPin(e.target.value); setError("") }}
+                  placeholder="••••••"
+                  className="w-full h-14 rounded-2xl border-2 border-border bg-secondary/40 text-center text-2xl tracking-[0.4em] text-foreground placeholder:text-muted-foreground/40 placeholder:tracking-normal focus:border-yellow-400 outline-none transition-colors"
+                  maxLength={6}
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleOrganizerLogin()}
+                />
+              </div>
+              <AnimatePresence>
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-red-500 text-sm text-center font-medium"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
-        <div className="p-6 pb-10">
-          <Button
+        {/* Bottom login button — plain yellow, no ugly blue */}
+        <div className="px-8 pb-12">
+          <button
             onClick={handleOrganizerLogin}
             disabled={!pin.trim()}
-            className="w-full h-14 text-base font-semibold rounded-2xl"
+            className="w-full h-14 rounded-2xl bg-yellow-400 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold text-base transition-colors shadow-md"
           >
-            <Settings className="w-5 h-5 mr-2" />
             Login
-          </Button>
+          </button>
         </div>
       </div>
     )
