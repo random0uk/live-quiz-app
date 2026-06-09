@@ -38,9 +38,9 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
   const current = taglines[currentIndex]
 
   return (
-    /* Desktop: centered phone-like card. Mobile: full screen */
-    <div className="w-full h-full flex items-center justify-center bg-gray-900">
-      <div className="relative w-full h-full md:w-[390px] md:h-[780px] md:rounded-3xl overflow-hidden shadow-2xl">
+    /* Full screen always */
+    <div className="w-full h-full">
+      <div className="relative w-full h-full overflow-hidden">
 
         {/* Background Image Carousel */}
         <AnimatePresence mode="wait">
