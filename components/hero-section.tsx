@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const heroImages = [
@@ -60,8 +59,12 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
 
       {/* Content Overlay */}
       <div className="relative z-10 h-full flex flex-col items-center justify-between p-6">
-        {/* Top Spacing */}
-        <div className="flex-1" />
+        {/* Top Logo — Small and Right */}
+        <div className="w-full flex justify-end">
+          <div className="text-xl font-black text-white drop-shadow-lg">
+            Awane<span className="text-yellow-400">.</span>
+          </div>
+        </div>
 
         {/* Content Center */}
         <motion.div
@@ -71,13 +74,11 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
           className="flex flex-col items-center justify-center text-center gap-4 max-w-sm"
         >
           <div className="space-y-2">
-            <h1 className="text-4xl font-black text-white drop-shadow-lg tracking-tight">
-              Awane
-              <br />
-              Quiz
+            <h1 className="text-3xl font-black text-white drop-shadow-lg tracking-tight">
+              Quiz Challenge
             </h1>
             <p className="text-base font-medium text-white/90 drop-shadow">
-              Challenge Your Knowledge
+              Level Up Your Brain
             </p>
           </div>
 
@@ -92,51 +93,28 @@ export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionPr
               className="w-full h-12 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full flex items-center justify-center gap-2 transition-colors"
             >
               Start Playing Now
-              <ChevronRight className="w-4 h-4" />
             </Button>
             <Button
               onClick={onLearnMore}
-              variant="outline"
-              className="w-full h-10 border-white/80 text-white hover:bg-white/10 font-medium rounded-full transition-colors"
+              className="w-full h-10 border-white/80 border bg-transparent text-white hover:bg-white/10 font-medium rounded-full transition-colors"
             >
               Learn More
             </Button>
           </div>
         </motion.div>
 
-        {/* Bottom Controls */}
-        <div className="flex items-center justify-between w-full max-w-xs">
-          {/* Prev Button */}
-          <button
-            onClick={handlePrevImage}
-            className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
-            aria-label="Previous image"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          {/* Dots Indicator */}
-          <div className="flex gap-1.5">
-            {heroImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentImageIndex(i)}
-                className={`h-2 rounded-full transition-all ${
-                  i === currentImageIndex ? 'bg-yellow-400 w-6' : 'bg-white/40 w-2'
-                }`}
-                aria-label={`Go to image ${i + 1}`}
-              />
-            ))}
-          </div>
-
-          {/* Next Button */}
-          <button
-            onClick={handleNextImage}
-            className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
-            aria-label="Next image"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+        {/* Bottom Dots Only */}
+        <div className="flex gap-1.5">
+          {heroImages.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentImageIndex(i)}
+              className={`h-2 rounded-full transition-all ${
+                i === currentImageIndex ? 'bg-yellow-400 w-6' : 'bg-white/40 w-2'
+              }`}
+              aria-label={`Go to image ${i + 1}`}
+            />
+          ))}
         </div>
 
         {/* Bottom Spacing */}
