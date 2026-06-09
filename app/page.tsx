@@ -2,20 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Settings, ArrowLeft } from "lucide-react"
+import { Settings, ArrowLeft, Hash, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import HeroSection from "@/components/hero-section"
 import FeaturesSheet from "@/components/FeaturesSheet"
 import { applyBrandColor } from "@/hooks/use-brand-color"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function Home() {
   const router = useRouter()
@@ -157,45 +151,96 @@ export default function Home() {
         organizerName={organizerName}
       />
 
-      {/* Join Quiz Modal */}
-      <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Join a Quiz</DialogTitle>
-            <DialogDescription>
-              Enter the quiz PIN provided by the organizer
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="text"
-              value={joinPin}
-              onChange={(e) => setJoinPin(e.target.value.toUpperCase())}
-              placeholder="Enter PIN"
-              className="text-center text-2xl tracking-widest h-14 font-mono"
-              maxLength={6}
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleJoinQuiz()}
+      {/* Join Quiz Bottom Sheet */}
+      <AnimatePresence>
+        {showJoinModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setShowJoinModal(false); setJoinPin(""); setJoinError("") }}
+              className="fixed inset-0 bg-black/50 z-40"
             />
-            {joinError && <p className="text-destructive text-sm text-center">{joinError}</p>}
-            <Button
-              onClick={handleJoinQuiz}
-              disabled={!joinPin.trim()}
-              className="w-full h-12 font-semibold"
+
+            {/* Bottom Sheet */}
+            <motion.div
+              key="sheet"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 32 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl px-6 pt-4 pb-10 shadow-2xl max-w-lg mx-auto"
             >
-              Join Quiz
-            </Button>
-            <Button
-              onClick={() => setView("organizer")}
-              variant="outline"
-              className="w-full h-12 font-semibold"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Organizer Login
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+              {/* Drag handle */}
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
+
+              {/* Close button */}
+              <button
+                onClick={() => { setShowJoinModal(false); setJoinPin(""); setJoinError("") }}
+                className="absolute top-5 right-5 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+
+              {/* Icon + Title */}
+              <div className="flex flex-col gap-1 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-yellow-400 flex items-center justify-center mb-3 shadow-md">
+                  <Hash className="w-6 h-6 text-black" />
+                </div>
+                <h2 className="text-xl font-black text-gray-900">Enter Quiz PIN</h2>
+                <p className="text-sm text-gray-500">Type the code shown on the projector screen</p>
+              </div>
+
+              {/* PIN Input */}
+              <div className="space-y-3 mb-6">
+                <input
+                  type="text"
+                  value={joinPin}
+                  onChange={(e) => { setJoinPin(e.target.value.toUpperCase()); setJoinError("") }}
+                  placeholder="e.g. AB12CD"
+                  className="w-full h-16 rounded-2xl border-2 border-gray-200 focus:border-yellow-400 outline-none text-center text-3xl font-black tracking-[0.3em] text-gray-900 bg-gray-50 transition-colors"
+                  maxLength={6}
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleJoinQuiz()}
+                />
+                <AnimatePresence>
+                  {joinError && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="text-red-500 text-sm text-center font-medium"
+                    >
+                      {joinError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleJoinQuiz}
+                  disabled={!joinPin.trim()}
+                  className="w-full h-14 rounded-2xl bg-yellow-400 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold text-base transition-colors shadow-lg"
+                >
+                  Join Quiz
+                </button>
+                <button
+                  onClick={() => { setShowJoinModal(false); setView("organizer") }}
+                  className="w-full h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Organizer Login
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
