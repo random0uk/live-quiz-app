@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Trophy, Users, Calendar, ChevronRight, Zap, BarChart2, Clock, Star, TrendingUp, Play } from "lucide-react"
+import { ArrowLeft, Trophy, Users, Calendar, ChevronRight, Zap, BarChart2, Clock, Star, TrendingUp, Play, LogOut, Menu, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import type { Quiz, Player } from "@/lib/types"
 
@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithPlayers | null>(null)
   const [organizerName, setOrganizerName] = useState("Organizer")
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     if (localStorage.getItem("organizer_auth") !== "true") {
@@ -49,6 +50,11 @@ export default function DashboardPage() {
     setLoading(false)
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("organizer_auth")
+    router.push("/")
+  }
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr)
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -75,7 +81,7 @@ export default function DashboardPage() {
     )
   }
 
-  // ── Detail view ──
+  // ── Detail view (mobile) ──
   if (selectedQuiz) {
     const sorted = [...selectedQuiz.players].sort((a, b) => b.score - a.score)
     const top3 = sorted.slice(0, 3)
@@ -83,7 +89,7 @@ export default function DashboardPage() {
     const medals = ["🥇", "🥈", "🥉"]
 
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background lg:hidden">
         <div className="max-w-md mx-auto px-4 py-6 space-y-5">
           <button
             onClick={() => setSelectedQuiz(null)}
@@ -98,209 +104,226 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold uppercase tracking-widest opacity-60 mb-1">{formatDate(selectedQuiz.created_at)} · {formatTime(selectedQuiz.created_at)}</p>
             <h2 className="text-xl font-black leading-tight mb-3">{selectedQuiz.title}</h2>
             <div className="flex gap-3">
-              <div className="flex-1 bg-background/10 rounded-xl p-3 text-center">
-                <p className="text-2xl font-black">{selectedQuiz.players.length}</p>
-                <p className="text-xs opacity-60 mt-0.5">Players</p>
+              <div className="flex items-center gap-1 text-sm">
+                <Users className="w-4 h-4" />
+                {selectedQuiz.players.length} Players
               </div>
-              <div className="flex-1 bg-background/10 rounded-xl p-3 text-center">
-                <p className="text-2xl font-black uppercase font-mono">{selectedQuiz.game_code}</p>
-                <p className="text-xs opacity-60 mt-0.5">Code</p>
-              </div>
-              <div className="flex-1 bg-background/10 rounded-xl p-3 text-center">
-                <p className="text-2xl font-black capitalize">{selectedQuiz.mode ?? "classic"}</p>
-                <p className="text-xs opacity-60 mt-0.5">Mode</p>
+              <div className="flex items-center gap-1 text-sm">
+                <Star className="w-4 h-4 text-yellow-400" />
+                {Math.max(...selectedQuiz.players.map(p => p.score))} Top Score
               </div>
             </div>
           </div>
 
-          {/* Podium */}
-          {top3.length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <p className="text-sm font-bold flex items-center gap-2 mb-4">
-                <Trophy className="w-4 h-4 text-yellow-400" />
-                Top Players
-              </p>
-              <div className="flex items-end justify-center gap-3">
-                {[top3[1], top3[0], top3[2]].map((p, idx) => {
-                  if (!p) return <div key={idx} className="w-20" />
-                  const realIdx = idx === 0 ? 1 : idx === 1 ? 0 : 2
-                  const heights = ["h-20", "h-28", "h-16"]
-                  const colors = ["bg-gray-100", "bg-yellow-400", "bg-orange-100"]
-                  return (
-                    <div key={p.id} className="flex flex-col items-center gap-1">
-                      <span className="text-lg">{medals[realIdx]}</span>
-                      <div className={`w-20 ${heights[idx]} ${colors[idx]} rounded-t-xl flex items-end justify-center pb-2`}>
-                        <span className="text-xs font-bold text-gray-600">{realIdx + 1}</span>
-                      </div>
-                      <div className="w-20 text-center">
-                        <p className="text-xs font-bold truncate">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.score} pts</p>
-                      </div>
-                    </div>
-                  )
-                })}
+          {/* Top 3 Medal */}
+          <div className="grid grid-cols-3 gap-3">
+            {top3.map((player, idx) => (
+              <div key={player.id} className="rounded-2xl bg-card p-4 text-center">
+                <div className="text-2xl mb-2">{medals[idx]}</div>
+                <p className="font-black text-lg text-foreground mb-1">{player.score}</p>
+                <p className="text-xs text-muted-foreground truncate">{player.name}</p>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* Rest of players */}
+          {/* Rest */}
           {rest.length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <p className="text-sm font-bold mb-3">All Players</p>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {sorted.map((p, i) => (
-                  <div key={p.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
-                    <span className="w-5 text-xs font-bold text-muted-foreground">{i + 1}</span>
-                    <span className="flex-1 text-sm font-medium truncate">{p.name}</span>
-                    <span className="text-sm font-bold text-yellow-500">{p.score} pts</span>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Other Players</p>
+              {rest.map((player, idx) => (
+                <div key={player.id} className="flex items-center justify-between bg-card p-3 rounded-xl">
+                  <div>
+                    <p className="font-semibold text-foreground">{player.name}</p>
+                    <p className="text-xs text-muted-foreground">#{idx + 4} • {player.score} pts</p>
                   </div>
-                ))}
-              </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              ))}
             </div>
-          )}
-
-          {selectedQuiz.players.length === 0 && (
-            <p className="text-center text-muted-foreground text-sm py-8">No players joined this quiz</p>
           )}
         </div>
       </div>
     )
   }
 
-  // ── Dashboard view ──
+  // ── Desktop Main Dashboard ──
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+      {/* Mobile header + sidebar toggle */}
+      <div className="lg:hidden flex items-center justify-between px-4 py-4 border-b border-border">
+        <h1 className="font-black text-lg">Awane Dashboard</h1>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 hover:bg-secondary rounded-lg transition-colors"
+        >
+          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-yellow-500">Dashboard</p>
-            <h1 className="text-2xl font-black text-foreground">Hey, {organizerName} 👋</h1>
-          </div>
-          <Link href="/organizer">
-            <button className="flex items-center gap-1.5 text-xs font-semibold bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded-xl transition-colors">
-              <Play className="w-3.5 h-3.5" />
-              New Quiz
-            </button>
-          </Link>
-        </div>
-
-        {/* KPI Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-foreground text-background p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Zap className="w-4 h-4 opacity-60" />
-              <span className="text-xs opacity-50">Total</span>
+      <div className="flex">
+        {/* Sidebar - Desktop always, Mobile conditional */}
+        {(sidebarOpen || typeof window === 'undefined' || window.innerWidth >= 1024) && (
+          <div className="hidden lg:flex lg:w-64 flex-col border-r border-border bg-card/30 p-6">
+            <div className="mb-8">
+              <h2 className="text-lg font-black text-foreground mb-1">Awane</h2>
+              <p className="text-xs text-muted-foreground">Dashboard</p>
             </div>
-            <p className="text-3xl font-black">{totalQuizzes}</p>
-            <p className="text-xs opacity-60 mt-0.5">Quizzes run</p>
-          </div>
 
-          <div className="rounded-2xl bg-yellow-400 text-black p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Users className="w-4 h-4 opacity-60" />
-              <span className="text-xs opacity-50">All time</span>
-            </div>
-            <p className="text-3xl font-black">{totalPlayers}</p>
-            <p className="text-xs opacity-60 mt-0.5">Players joined</p>
-          </div>
+            <nav className="space-y-1 flex-1">
+              <div className="px-3 py-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20">
+                <div className="flex items-center gap-2 font-semibold text-yellow-600">
+                  <BarChart2 className="w-4 h-4" />
+                  Overview
+                </div>
+              </div>
+            </nav>
 
-          <div className="rounded-2xl bg-card border border-border p-4">
-            <div className="flex items-center justify-between mb-2">
-              <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Avg</span>
-            </div>
-            <p className="text-3xl font-black text-foreground">{avgPlayers}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Players/quiz</p>
-          </div>
-
-          <div className="rounded-2xl bg-card border border-border p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Star className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Best</span>
-            </div>
-            <p className="text-3xl font-black text-foreground">{topScore > 0 ? topScore.toLocaleString() : "—"}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Top score ever</p>
-          </div>
-        </div>
-
-        {/* Last quiz snapshot */}
-        {recentQuiz && (
-          <div
-            className="rounded-2xl bg-card border border-border p-4 cursor-pointer hover:border-yellow-400/50 transition-colors"
-            onClick={() => setSelectedQuiz(recentQuiz)}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs font-semibold uppercase tracking-widest text-yellow-500">Latest Quiz</p>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <p className="font-black text-foreground text-lg leading-tight">{recentQuiz.title}</p>
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Users className="w-3 h-3" />{recentQuiz.players.length} players</span>
-              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(recentQuiz.created_at)}</span>
-              <span className={`px-2 py-0.5 rounded-full font-semibold ${recentQuiz.status === "finished" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                {recentQuiz.status}
-              </span>
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-3 font-semibold uppercase tracking-widest">Account</p>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
             </div>
           </div>
         )}
 
-        {/* Quiz history list */}
-        <div>
-          <p className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-            <BarChart2 className="w-4 h-4 text-yellow-400" />
-            Quiz History
-          </p>
-
-          {quizzes.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-              <Zap className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-              <p className="font-bold text-foreground">No quizzes yet</p>
-              <p className="text-sm text-muted-foreground mt-1">Run your first quiz to see stats here</p>
-              <Link href="/organizer">
-                <button className="mt-4 px-5 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl text-sm transition-colors">
-                  Create Quiz
-                </button>
-              </Link>
+        {/* Main content */}
+        <div className="flex-1 lg:p-8 p-4">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-yellow-600 mb-1">Dashboard</p>
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground">
+                Hey, {organizerName} 👋
+              </h1>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {quizzes.map((quiz) => {
-                const winner = quiz.players[0]
-                return (
-                  <div
-                    key={quiz.id}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border cursor-pointer hover:border-yellow-400/50 transition-colors"
-                    onClick={() => setSelectedQuiz(quiz)}
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                      <Zap className="w-4 h-4 text-yellow-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground text-sm truncate">{quiz.title}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{quiz.players.length}</span>
-                        <span className="font-mono uppercase">{quiz.game_code}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full ${quiz.status === "finished" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                          {quiz.status}
-                        </span>
-                      </div>
-                      {winner && (
-                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                          <Trophy className="w-3 h-3 text-yellow-400" />
-                          {winner.name} · {winner.score} pts
-                        </p>
-                      )}
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            <button className="hidden lg:flex items-center gap-2 mt-4 lg:mt-0 h-10 px-4 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors">
+              <Zap className="w-4 h-4" />
+              New Quiz
+            </button>
+          </div>
+
+          {/* KPI Grid - 2x2 on mobile, 4 columns on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
+            {/* KPI 1: Total Quizzes */}
+            <div className="rounded-2xl bg-foreground text-background p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <Zap className="w-5 h-5 opacity-60" />
+                <span className="text-xs font-semibold text-yellow-300">Total</span>
+              </div>
+              <p className="text-2xl lg:text-3xl font-black mb-1">{totalQuizzes}</p>
+              <p className="text-xs opacity-70">Quizzes run</p>
+            </div>
+
+            {/* KPI 2: Total Players */}
+            <div className="rounded-2xl bg-yellow-400 text-black p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <Users className="w-5 h-5 opacity-60" />
+                <span className="text-xs font-semibold">All time</span>
+              </div>
+              <p className="text-2xl lg:text-3xl font-black mb-1">{totalPlayers}</p>
+              <p className="text-xs opacity-70">Players joined</p>
+            </div>
+
+            {/* KPI 3: Avg Players */}
+            <div className="rounded-2xl bg-card p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <TrendingUp className="w-5 h-5 text-yellow-600" />
+                <span className="text-xs font-semibold text-yellow-600">Avg</span>
+              </div>
+              <p className="text-2xl lg:text-3xl font-black text-foreground mb-1">{avgPlayers}</p>
+              <p className="text-xs text-muted-foreground">Players/quiz</p>
+            </div>
+
+            {/* KPI 4: Top Score */}
+            <div className="rounded-2xl bg-card p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <Trophy className="w-5 h-5 text-yellow-600" />
+                <span className="text-xs font-semibold text-yellow-600">Best</span>
+              </div>
+              <p className="text-2xl lg:text-3xl font-black text-foreground mb-1">{topScore.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Top score ever</p>
+            </div>
+          </div>
+
+          {/* Latest Quiz Card */}
+          {recentQuiz && (
+            <div className="rounded-2xl bg-card border border-yellow-400/30 p-5 lg:p-6 mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-yellow-600 mb-2">Latest Quiz</p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg lg:text-xl font-black text-foreground mb-1">{recentQuiz.title}</h3>
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {recentQuiz.players.length} players
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(recentQuiz.created_at)}
+                    </span>
+                    <span className="inline-block px-2 py-0.5 bg-yellow-400/20 text-yellow-700 rounded-full text-xs font-semibold">
+                      {recentQuiz.status}
+                    </span>
                   </div>
-                )
-              })}
+                </div>
+                <button
+                  onClick={() => setSelectedQuiz(recentQuiz)}
+                  className="ml-4 p-2 hover:bg-secondary rounded-lg transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
             </div>
           )}
-        </div>
 
+          {/* Quiz History */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg lg:text-xl font-black text-foreground">Quiz History</h2>
+              {quizzes.length > 0 && (
+                <p className="text-xs text-muted-foreground">{quizzes.length} total</p>
+              )}
+            </div>
+
+            {quizzes.length === 0 ? (
+              <div className="rounded-2xl bg-card border border-dashed border-border p-8 text-center">
+                <p className="text-muted-foreground text-sm">No quizzes yet. Create your first one to get started!</p>
+              </div>
+            ) : (
+              <div className="space-y-2 lg:space-y-3">
+                {quizzes.map((quiz) => (
+                  <button
+                    key={quiz.id}
+                    onClick={() => setSelectedQuiz(quiz)}
+                    className="w-full rounded-2xl bg-card hover:bg-secondary transition-colors p-4 lg:p-5 flex items-center justify-between group"
+                  >
+                    <div className="flex items-start gap-3 flex-1 text-left">
+                      <div className="flex-shrink-0">
+                        <Zap className="w-5 h-5 text-yellow-500 mt-1" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-foreground group-hover:text-yellow-600 transition-colors">{quiz.title}</h3>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
+                          <span>👥 {quiz.players.length}</span>
+                          <span>📅 {formatDate(quiz.created_at)}</span>
+                          <span className="inline-block px-2 py-0.5 bg-yellow-400/10 text-yellow-700 rounded text-xs font-semibold">
+                            {quiz.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
