@@ -145,7 +145,10 @@ export default function Home() {
   // Home view with hero section
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <HeroSection onStartClick={() => setShowJoinModal(true)} />
+      <HeroSection 
+        onStartClick={() => setShowJoinModal(true)}
+        onLearnMore={() => setFeaturesOpen(true)}
+      />
 
       {/* Features Sheet */}
       <FeaturesSheet
