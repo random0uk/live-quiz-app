@@ -3,14 +3,21 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogIn } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 const heroImages = [
-  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=1600&fit=crop', // Students studying together
-  'https://images.unsplash.com/photo-1434582881033-7461ffad8d80?w=1200&h=1600&fit=crop', // Group learning
-  'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=1200&h=1600&fit=crop', // Brain/mind concept
-  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=1600&fit=crop', // Collaborative learning
-  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&h=1600&fit=crop', // Knowledge/reading
+  'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=800&h=1200&fit=crop', // Quiz/trivia night
+  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=1200&fit=crop', // Students collaborating
+  'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&h=1200&fit=crop', // Classroom learning
+  'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&h=1200&fit=crop', // Friends playing game
+  'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&h=1200&fit=crop', // Knowledge/study
+]
+
+const taglines = [
+  { title: 'Quiz Challenge', sub: 'Test What You Know' },
+  { title: 'Play Together', sub: 'Live. Real-Time. Fun.' },
+  { title: 'Level Up', sub: 'One Question at a Time' },
+  { title: 'Who Wins?', sub: 'Compete with Friends' },
+  { title: 'Be the Champion', sub: 'Prove Your Knowledge' },
 ]
 
 interface HeroSectionProps {
@@ -19,110 +26,118 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ onStartClick, onLearnMore }: HeroSectionProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length)
+      setCurrentIndex((prev) => (prev + 1) % heroImages.length)
     }, 5000)
     return () => clearInterval(timer)
   }, [])
 
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + heroImages.length) % heroImages.length)
-  }
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % heroImages.length)
-  }
+  const current = taglines[currentIndex]
 
   return (
-    <div className="relative w-full h-full bg-white overflow-hidden">
-      {/* Background Image Carousel */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentImageIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          className="absolute inset-0"
-        >
-          <img
-            src={heroImages[currentImageIndex]}
-            alt="Hero background"
-            className="w-full h-full object-cover"
-          />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-black/20" />
-        </motion.div>
-      </AnimatePresence>
+    /* Desktop: centered phone-like card. Mobile: full screen */
+    <div className="w-full h-full flex items-center justify-center bg-gray-900">
+      <div className="relative w-full h-full md:w-[390px] md:h-[780px] md:rounded-3xl overflow-hidden shadow-2xl">
 
-      {/* Content Overlay */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-start p-6 pt-12">
-        {/* Top Header — Logo Left, Login Icon Right */}
-        <div className="w-full flex items-center justify-between mb-16">
-          <div className="text-xl font-black text-white drop-shadow-lg">
-            Awane<span className="text-yellow-400">.</span>
-          </div>
-          <button 
-            onClick={onStartClick}
-            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-            aria-label="Login"
+        {/* Background Image Carousel */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.9 }}
+            className="absolute inset-0"
           >
-            <LogIn className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        {/* Content Center */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col items-start justify-center text-left gap-4 max-w-sm flex-1"
-        >
-          <div className="space-y-2">
-            <h1 className="text-3xl font-black text-white drop-shadow-lg tracking-tight">
-              Quiz Challenge
-            </h1>
-            <p className="text-base font-medium text-white/90 drop-shadow">
-              Level Up Your Brain
-            </p>
-          </div>
-
-          <p className="text-sm text-white/80 leading-relaxed drop-shadow">
-            Interactive quizzes that challenge, engage, and inspire. Play live with friends or test your knowledge solo.
-          </p>
-
-          {/* Buttons — Side by Side with Box Styling */}
-          <div className="flex gap-3 w-full pt-4 max-w-sm">
-            <Button
-              onClick={onStartClick}
-              className="flex-1 h-12 px-5 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-2xl transition-colors text-sm shadow-lg hover:shadow-xl"
-            >
-              Start Playing
-            </Button>
-            <Button
-              onClick={onLearnMore}
-              className="flex-1 h-12 px-5 border-2 border-white/90 bg-transparent text-white hover:bg-white/15 font-bold rounded-2xl transition-colors text-sm shadow-lg hover:shadow-xl"
-            >
-              Learn More
-            </Button>
-          </div>
-        </motion.div>
-
-        {/* Bottom Dots Only */}
-        <div className="flex gap-1.5 mb-6">
-          {heroImages.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentImageIndex(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === currentImageIndex ? 'bg-yellow-400 w-6' : 'bg-white/40 w-2'
-              }`}
-              aria-label={`Go to image ${i + 1}`}
+            <img
+              src={heroImages[currentIndex]}
+              alt="Quiz background"
+              className="w-full h-full object-cover"
             />
-          ))}
+            {/* Gradient overlay — stronger at bottom for buttons */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/70" />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Content Layout */}
+        <div className="relative z-10 h-full flex flex-col px-6 py-10">
+
+          {/* TOP — Logo left, Login icon right */}
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-black text-white tracking-tight drop-shadow">
+              Awane<span className="text-yellow-400">.</span>
+            </span>
+            <button
+              onClick={onStartClick}
+              className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-colors"
+              aria-label="Login"
+            >
+              <LogIn className="w-4 h-4 text-white" />
+            </button>
+          </div>
+
+          {/* MIDDLE — Spacer pushes content to bottom */}
+          <div className="flex-1" />
+
+          {/* BOTTOM — Title, desc, buttons, dots */}
+          <div className="flex flex-col gap-4">
+
+            {/* Title & Subtitle */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.5 }}
+                className="flex flex-col gap-1"
+              >
+                <h1 className="text-4xl font-black text-white leading-tight drop-shadow-lg">
+                  {current.title}
+                </h1>
+                <p className="text-base font-semibold text-yellow-300 drop-shadow">
+                  {current.sub}
+                </p>
+                <p className="text-sm text-white/75 leading-relaxed mt-1 max-w-[280px]">
+                  Interactive quizzes that challenge, engage, and inspire. Play live with friends or test your knowledge solo.
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Buttons — side by side, boxed with rounded corners */}
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={onStartClick}
+                className="flex-1 h-12 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-sm rounded-xl transition-all shadow-lg active:scale-95"
+              >
+                Start Playing
+              </button>
+              <button
+                onClick={onLearnMore}
+                className="flex-1 h-12 bg-transparent border-2 border-white/80 text-white font-bold text-sm rounded-xl hover:bg-white/10 transition-all shadow-lg active:scale-95"
+              >
+                Learn More
+              </button>
+            </div>
+
+            {/* Dots */}
+            <div className="flex gap-1.5 mt-1">
+              {heroImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentIndex(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === currentIndex ? 'bg-yellow-400 w-6' : 'bg-white/35 w-1.5'
+                  }`}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
