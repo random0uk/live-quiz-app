@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Settings, ArrowLeft, Hash, X } from "lucide-react"
+import { Settings, ArrowLeft, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
@@ -185,13 +185,10 @@ export default function Home() {
                 <X className="w-4 h-4 text-gray-500" />
               </button>
 
-              {/* Icon + Title */}
+              {/* Title */}
               <div className="flex flex-col gap-1 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-yellow-400 flex items-center justify-center mb-3 shadow-md">
-                  <Hash className="w-6 h-6 text-black" />
-                </div>
                 <h2 className="text-xl font-black text-gray-900">Enter Quiz PIN</h2>
-                <p className="text-sm text-gray-500">Type the code shown on the projector screen</p>
+                <p className="text-sm text-gray-400">Type the code shown on the projector screen</p>
               </div>
 
               {/* PIN Input */}
@@ -200,8 +197,8 @@ export default function Home() {
                   type="text"
                   value={joinPin}
                   onChange={(e) => { setJoinPin(e.target.value.toUpperCase()); setJoinError("") }}
-                  placeholder="e.g. AB12CD"
-                  className="w-full h-16 rounded-2xl border-2 border-gray-200 focus:border-yellow-400 outline-none text-center text-3xl font-black tracking-[0.3em] text-gray-900 bg-gray-50 transition-colors"
+                  placeholder="Enter PIN code"
+                  className="w-full h-16 rounded-2xl border-2 border-gray-200 focus:border-yellow-400 outline-none text-center text-2xl font-black tracking-[0.25em] text-gray-900 bg-gray-50 transition-colors placeholder:text-gray-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal"
                   maxLength={6}
                   autoFocus
                   onKeyDown={(e) => e.key === "Enter" && handleJoinQuiz()}
